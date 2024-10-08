@@ -9,7 +9,7 @@ from docutils.parsers.rst import directives
 from docutils.parsers.rst import Directive
 from sphinx.util import texescape
 from sphinx.util.docutils import SphinxDirective
-from sphinx.util.template import ReSTRenderer
+from sphinx.util.template import ReSTRenderer, LaTeXRenderer
 from docutils.statemachine import ViewList
 from sphinx.util.nodes import nested_parse_with_titles
 from sphinx.errors import NoUri
@@ -34,24 +34,28 @@ class xxxreq_node(nodes.Element):
     pass
 
 def visit_xxxreq_node(self: HTML5Translator, node: xxxreq_node) -> None:
-    return
-    self.body.append(self.starttag(node, 'div', CLASS='xxxreq'))
-    self.body.append('<p style="margin-left:-4em; margin-bottom: -2.3em">'+node['reqid']+'</p>\n')
+    r = ReSTRenderer(os.path.dirname(__file__))
+    s = r.render('req.html', node.attributes)
+    self.body.append(s.split('---CUT HERE---')[0])
+    # XXX push/pop
+    self._req = s.split('---CUT HERE---')[1]
 
 def depart_xxxreq_node(self: HTML5Translator, node: xxxreq_node) -> None:
-    return
-    self.body.append('</div>\n')
+    self.body.append(self._req)
+    self._req = None
 
 def latex_visit_xxxreq_node(self: LaTeXTranslator, node: xxxreq_node) -> None:
-    return
-    self.body.append('\n\\begin{xxxreq}{')
-    self.body.append(self.hypertarget_to(node))
+    r = LaTeXRenderer(os.path.dirname(__file__))
+    s = r.render('req.latex', node.attributes)
+    self.body.append(s.split('---CUT HERE---')[0])
+    # XXX push/pop
+    self._req = s.split('---CUT HERE---')[1]
 
 
 def latex_depart_xxxreq_node(self: LaTeXTranslator, node: xxxreq_node) -> None:
+    self.body.append(self._req)
+    self._req = None
     return
-    self.body.append('\n}\n\\end{xxxreq}\n')
-
 
 class XXXReq(SphinxDirective):
     """
@@ -114,19 +118,68 @@ class XXXReq(SphinxDirective):
         node['title'] = title
         node['content'] = content
 
-        r = ReSTRenderer(os.path.dirname(__file__))
-        kwargs = dict(
-                reqid=reqid,
-                title=title,
-                content=content)
-        kwargs.update(self.options)
-        s = r.render('req.rst', kwargs)
+        # r = ReSTRenderer(os.path.dirname(__file__))
+        # kwargs = dict(
+        #         reqid=reqid,
+        #         title=title,
+        #         content=content)
+        # kwargs.update(self.options)
+        # s = r.render('req.rst', kwargs)
+        # self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.rst'))
+        self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.html'))
 
-        nodes = self.parse_text_to_nodes(s)
-        return [node]+nodes
+        nodes = self.parse_text_to_nodes(content)   # s
+        node += nodes
+        return [node] #+nodes
+
+import pprint
+def html_page_context(app, pagename, templatename, context, doctree):
+    pprint.pprint(context.keys())
+    # pprint.pprint(context['js_tag'])
+    # pprint.pprint(context['css_tag'])
+    # context['css_tag'].
+
+def config_inited(app, config):
+    if not config.rst_prolog:
+        config.rst_prolog = ''
+    config.rst_prolog += '''
+.. raw:: html
+
+    <style>
+        .xxxreq {
+            background-color: red;
+        }
+        .xxxreqid {
+            margin-left:-4em;
+            margin-bottom: -2.3em;
+        }
+    </style>
+    '''
+    config.latex_elements.setdefault('preamble', '')
+    config.latex_elements['preamble'] += r'''
+
+\usepackage[framemethod=TikZ]{mdframed}
+\usepackage{bbding}
+\usepackage{pifont}
+\usepackage{marginnote}
+
+\DeclareUnicodeCharacter{2750}{\ding{238} }
+
+\definecolor{xxxreqbg}{rgb}{0.85,0.85,0.85}
+\definecolor{xxxreqidbg}{rgb}{0.95,0.95,0.95}
+
+\newmdenv[backgroundcolor=xxxreqbg]{xxxreq}
+\newmdenv[roundcorner=5pt,leftmargin=20,rightmargin=10,backgroundcolor=xxxreqidbg]{sphinxclassxxxreqid}
+
+\renewcommand*{\marginfont}{\color{red}\sffamily}
+    '''
+    print(config.latex_elements)
 
 def setup(app):
+    # XXX config: req_html_style, req_latex_preamble
     app.add_directive('xxxreq', XXXReq)
     app.add_node(xxxreq_node,
                  html=(visit_xxxreq_node, depart_xxxreq_node),
                  latex=(latex_visit_xxxreq_node, latex_depart_xxxreq_node))
+    
+    app.connect('config-inited', config_inited)

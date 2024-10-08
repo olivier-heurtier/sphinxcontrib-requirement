@@ -1,18 +1,11 @@
 
-.. raw:: html
+.. container:: xxxreq
 
-    <style>
-        .xxxreqid {
-            margin-left:-4em;
-            margin-bottom: -2.3em;
-        }
-    </style>
+    .. container:: xxxreqid
 
-.. container:: xxxreqid
+        {{reqid}}
 
-    {{reqid}}
+    **{{title}}**
 
-**{{title}}**
-
-{{content}}
+    {{content|indent(4)}}
 

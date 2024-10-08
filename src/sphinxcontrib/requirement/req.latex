@@ -1,0 +1,6 @@
+<%=title%>
+\reversemarginpar
+\marginnote[<%=reqid%>]{<%=reqid%>}
+\normalmarginpar
+---CUT HERE---
+
