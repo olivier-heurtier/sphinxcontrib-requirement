@@ -1,11 +1,3 @@
+{{content|indent(0)}}
 
-.. container:: xxxreq
-
-    .. container:: xxxreqid
-
-        {{reqid}}
-
-    **{{title}}**
-
-    {{content|indent(4)}}
-
+Priority: *{{priority|default('-')}}*
