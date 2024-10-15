@@ -4,7 +4,7 @@
 Requirement Extension
 =====================
 
-.. xxxreq:: This is a title
+.. req:req:: This is a title
     :id: 0001
     :priority: 1
 
@@ -17,8 +17,5 @@ Requirement Extension
     * One
     * Two
 
-.. xxxreq:: This is a second title
-    :id: 0002
 
-    This is a simple requirement
-
+See :req:req:`0002`
