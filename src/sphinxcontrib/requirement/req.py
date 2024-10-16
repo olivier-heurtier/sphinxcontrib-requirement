@@ -8,21 +8,15 @@ import textwrap
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from docutils import nodes
-from docutils.parsers.rst import directives
-from docutils.parsers.rst import Directive
+from docutils.parsers.rst import Directive, directives
 from sphinx.domains import Domain
-from sphinx.util import texescape
 from sphinx.roles import XRefRole
 from sphinx.util.docutils import SphinxDirective, SphinxRole
 from sphinx.util.template import ReSTRenderer, LaTeXRenderer
 from docutils.statemachine import ViewList
 from sphinx.util.nodes import nested_parse_with_titles
-from sphinx.util.nodes import make_refnode
-from sphinx.errors import NoUri
 
 from collections.abc import Set
-
-from docutils.nodes import Element, Node
 
 from sphinx.application import Sphinx
 from sphinx.environment import BuildEnvironment
@@ -32,9 +26,7 @@ from sphinx.writers.latex import LaTeXTranslator
 
 #______________________________________________________________________________
 class req_node(nodes.Element):
-    # Get a node pointing to this requirement
-    def get_reference_node(self, builder, fromdocname, todocname, target, contnode):
-        return make_refnode(builder, fromdocname, todocname, self['targetid'], contnode)
+    pass
 
 def html_visit_req_node(self: HTML5Translator, node: req_node) -> None:
     r = ReSTRenderer(os.path.dirname(__file__))
@@ -126,8 +118,10 @@ class ReqDirective(SphinxDirective):
         node['content'] = content
 
         targetid = 'req-'+reqid # self.options.get('prefix',PREFIX+'-'+DOCID+'-')+reqid
+        targetnode = nodes.target('', '', ids=[targetid])
+
         node['ids'].append(targetid)
-        node['targetid'] = targetid
+#        node['targetid'] = targetid
 
         r = ReSTRenderer(os.path.dirname(__file__))
         kwargs = dict(
@@ -142,27 +136,23 @@ class ReqDirective(SphinxDirective):
 
         self.env.get_domain('req').add_req(node)
 
-        return [node]
+        return [targetnode, node]
 
 #______________________________________________________________________________
-class ReqRole(nodes.reference):
+def get_refuri(builder, fromdocname, todocname, target):
+    if target:
+        return builder.get_relative_uri(fromdocname, todocname) + '#' + target
+    else:
+        return builder.get_relative_uri(fromdocname, todocname)
+    return target
+
+#______________________________________________________________________________
+class ReqReference(nodes.reference):
     pass
-    # def get_reference_node(self,app,docname):
-    #     newnode = nodes.reference('', '', internal=True)
-    #     # See http://character-code.com/arrows-html-codes.php
-    #     # diamond: \u2662
-    #     # 3D box: \u2750
-    #     # arrow: \u2192 
-    #     innernode = nodes.inline(text=u'\u2750')
-    #     try:
-    #         newnode['refuri'] = app.builder.get_relative_uri(docname, self['docname'])
-    #         newnode['refuri'] += '#' + self['targetid']
-    #     except NoUri as e:
-    #         print(e)
-    #         # ignore if no URI can be determined, e.g. for LaTeX output
-    #         pass
-    #     newnode.append(innernode)
-    #     return newnode
+
+#______________________________________________________________________________
+class ReqRefReference(nodes.reference):
+    pass
 
 #______________________________________________________________________________
 class ReqDomain(Domain):
@@ -173,21 +163,30 @@ class ReqDomain(Domain):
         'req': ReqDirective,
     }
     roles = {
-        'req': XRefRole(), #nodeclass=ReqRole),
+        'req': XRefRole(nodeclass=ReqReference),
+        'ref': XRefRole(nodeclass=ReqRefReference),
     }
 
     initial_data = {
         'reqs': [],  # object list
+        'N': 1,
+        'reqrefs' : [],
     }
     data_version = 0
 
     def get_full_qualified_name(self, node):
-        return 'req-'+node['reqid']
+        if type(node) is ReqReference:
+            return 'req-'+node['reqid']
+        if type(node) is ReqRefReference:
+            return 'req-ref-'+node['reqid']
+        return node['reqid']
 
     def get_objects(self):
         for x in self.data['reqs']:
             yield (x[0], x[1]['reqid'], x[2], x[3], x[4], x[5])
-        # yield from self.data['reqs']
+
+    def clear_doc(self, docname):
+        pass    # XXX
 
     def add_req(self, req):
         name = 'req-'+req['reqid']
@@ -201,28 +200,76 @@ class ReqDomain(Domain):
             0,                  # the priority
         ))
 
-    # Transform XRefNode 'node' to a reference that points to a requirement
-    def resolve_xref(self, env,
-            fromdocname,        # docname where the link is
-            builder,
-            typ,                # the type of node, as registered in the domain
-            target,             # the target text
-            node,               # the XRefNode node
-            contnode):          # the content of the XRefNode
+    def add_reqref(self, reqref, target, docname):
+        name = target + '-' + '%06d'%self.data['N']
+        self.data['N'] += 1
+        reqref['targetid'] = name
+        self.data['reqrefs'].append((
+            name,
+            reqref,
+            'reqref',
+            docname,
+            name,
+            1,
+        ))
+        return name
+
+#______________________________________________________________________________
+def doctree_read(app, doctree):
+    # properly set the list of references
+    print('----------------doctree_read-------------------------')
+
+#______________________________________________________________________________
+def doctree_resolved(app, doctree, fromdocname):
+    # Finish configuration of ReqRefReference nodes
+    print('----------------doctree_resolved--%s-----------------------' % fromdocname)
+    dom = app.env.get_domain('req')
+
+    # fix refuri for multi doc document
+    for node in doctree.traverse(ReqReference):
+        # get the target req from the domain data
         match = [
             (docname, anchor, req)
-            for name, req, typ, docname, anchor, prio in self.data['reqs']
-            if req['reqid'] == target
+            for name, req, typ, docname, anchor, prio in dom.data['reqs']
+            if req['reqid'] == node['reftarget']
         ]
         if len(match) > 0:
             todocname = match[0][0]
             targ = match[0][1]
-            newnode = match[0][2].get_reference_node(builder,fromdocname, todocname, targ, contnode)
-            return newnode
-        else:
-            return None
+            node['refuri'] = get_refuri(app.builder, fromdocname, todocname, targ)
+
+            # populate its attributes so that it can be a target itself
+            targetid = dom.add_reqref(node, targ, fromdocname)
+            targetnode = nodes.target('', '', ids=[targetid])
+            node['ids'].append(targetid)
+            node.children = targetnode + node.children
+
+    # XXX to be moved to another phase because ReqReference in other documents are not yet transformed
+    for node in doctree.traverse(ReqRefReference):
+        node['refid'] = node['reftarget']
+        # Get all ReqReference nodes, and add a reference to them
+        match = [
+            (docname, anchor, reqref)
+            for name, reqref, typ, docname, anchor, prio in dom.data['reqrefs']
+            if reqref['reftarget'] == node['reftarget']
+        ]
+        p  = nodes.inline()
+        for r in match:
+            # print(r)
+            n = nodes.reference('', '', internal=True)
+            n['refuri'] = get_refuri(app.builder, fromdocname, r[0], r[1])
+            n.append( nodes.inline(text=u'\u2750') )
+            p += n
+            # print(n)
+        del node[0]
+        node += [p]
 
 
+def write_started(app, builder):
+    print('----------------write_started-------------------------')
+
+
+#______________________________________________________________________________
 def config_inited(app, config):
     if not config.rst_prolog:
         config.rst_prolog = ''
@@ -236,6 +283,7 @@ def config_inited(app, config):
     config.latex_elements.setdefault('preamble', '')
     config.latex_elements['preamble'] += config.req_latex_preamble
 
+#______________________________________________________________________________
 def setup(app: Sphinx) -> ExtensionMetadata:
     # config: req_html_style, req_latex_preamble
     with open(os.path.join(os.path.dirname(__file__), 'req.preamble'), 'r') as f:
@@ -245,6 +293,8 @@ def setup(app: Sphinx) -> ExtensionMetadata:
         html_css_default = f.read()
     app.add_config_value('req_html_css', html_css_default, 'env', [str], 'HTML stylesheet')
     app.connect('config-inited', config_inited)
+    app.connect('doctree-resolved', doctree_resolved)
+    app.connect('write-started', write_started)
 
     app.add_domain(ReqDomain)
     app.add_node(req_node,
