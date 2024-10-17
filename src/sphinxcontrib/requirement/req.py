@@ -5,6 +5,7 @@
 
 import io
 import os
+import csv
 import textwrap
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
@@ -58,85 +59,83 @@ class ReqDirective(SphinxDirective):
     optional_arguments = 1
     final_argument_whitespace = True
     option_spec = {
-        'id': directives.unchanged,
-        'prefix': directives.unchanged,
-        'label': directives.unchanged,
-        'priority': directives.unchanged,
-        'allocation': directives.unchanged,
-        'owner': directives.unchanged,
-        'parent': directives.unchanged,
-        'version': directives.unchanged,
-        'comment': directives.unchanged,
+        'reqid': directives.unchanged,
+        'parent': directives.unchanged, # XXX list of links
         'csv-file': directives.path,
-        'type': directives.unchanged,
-        'category': directives.unchanged,
-        'batch': directives.unchanged,
     }
 
     # Transform the directive into a list of docutils nodes
     def run(self):
-        # XXX For development
-        self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.rst'))
-        self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.html'))
-        self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.latex'))
-        self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.preamble'))
-        self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.css'))
-        self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.py'))
+        # For development
+        if _DEBUG:
+            self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'reqlist.rst'))
+            self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.rst'))
+            self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.html'))
+            self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.latex'))
+            self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.preamble'))
+            self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.css'))
+            self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.py'))
 
-        # if 'csv-file' in self.options:
-        #     # we are importing a bunch of req
-        #     relpath, abspath = self.env.relfn2path(directives.path(self.options.get('csv-file')))
-        #     self.env.note_dependency(relpath)
+        def _create_node(options):
+            reqid = options.get('reqid',None)
+            if reqid is None:
+                # generate a unique local id
+                reqid = '%03d' % (self.env.new_serialno()+1,)
+            options['reqid'] = reqid
 
-        #     del self.options['csv-file']
-        #     # label must be unique for one req. Avoid duplication
-        #     if 'label' in self.options:
-        #         del self.options['label']
+            node = req_node('', **options)
 
-        #     # XXX
+            targetid = 'req-'+reqid
+            targetnode = nodes.target('', '', ids=[targetid])
 
-        reqid = self.options.get('id',None)
-        title = None
-        
+            node['ids'].append(targetid)
+
+            r = ReSTRenderer(os.path.dirname(__file__))
+            s = r.render('req.rst', options)
+
+            sub_nodes = self.parse_text_to_nodes(s)
+            node += sub_nodes
+
+            self.env.get_domain('req').add_req(node)
+
+            return [targetnode, node]
+
+        if 'csv-file' in self.options:
+            # we are importing a bunch of req
+            relpath, abspath = self.env.relfn2path(self.options.get('csv-file'))
+            self.env.note_dependency(relpath)
+
+            del self.options['csv-file']
+
+            # Read the csv
+            allnodes = []
+            with open(abspath, 'rt') as csvfile:
+                spamreader = csv.reader(csvfile, delimiter=',')
+                fieldnames = next(spamreader)
+                if 'reqid' not in fieldnames and 'title' not in fieldnames and 'content' not in fieldnames:
+                    raise Exception("Missing header row in %s" % abspath)
+                
+                for row in spamreader:
+                    options = {}
+                    options.update(self.options)
+                    for i in range(len(fieldnames)):
+                        v = fieldnames[i]
+                        options[v] = row[i]
+                    allnodes.extend(_create_node(options))
+            return allnodes
+
+        title = ''
         if self.arguments:
-            if reqid:
-                title = self.arguments[0]
-            else:
-                args = self.arguments[0].split('\n')
-                if len(args)>0:
-                    reqid = args[0]
-                    title = '\n'.join(args[1:])
-        
-        if reqid is None:
-            # generate a unique local id
-            reqid = '%03d' % (self.env.new_serialno()+1,)
+            title = self.arguments[0]
+        if self.content:
+            content='\n'.join(self.content)
+        else:
+            content=''
+        self.options['title'] = title
+        self.options['content'] = content
 
-        content='\n'.join(self.content)
+        return _create_node(self.options)
 
-        node = req_node('', **self.options)
-        node['reqid'] = reqid
-        node['title'] = title
-        node['content'] = content
-
-        targetid = 'req-'+reqid # self.options.get('prefix',PREFIX+'-'+DOCID+'-')+reqid
-        targetnode = nodes.target('', '', ids=[targetid])
-
-        node['ids'].append(targetid)
-
-        r = ReSTRenderer(os.path.dirname(__file__))
-        kwargs = dict(
-                reqid=reqid,
-                title=title,
-                content=content)
-        kwargs.update(self.options)
-        s = r.render('req.rst', kwargs)
-
-        sub_nodes = self.parse_text_to_nodes(s)
-        node += sub_nodes
-
-        self.env.get_domain('req').add_req(node)
-
-        return [targetnode, node]
 
 #______________________________________________________________________________
 class reqlist_node(nodes.Element):
@@ -414,6 +413,9 @@ def config_inited(app, config):
     config.latex_elements.setdefault('preamble', '')
     config.latex_elements['preamble'] += config.req_latex_preamble
 
+    for k,v in config.req_options.items():
+        ReqDirective.option_spec[k] = eval(v)
+
 #______________________________________________________________________________
 def setup(app: Sphinx) -> ExtensionMetadata:
     # config: req_html_style, req_latex_preamble
@@ -424,7 +426,7 @@ def setup(app: Sphinx) -> ExtensionMetadata:
         html_css_default = f.read()
     app.add_config_value('req_html_css', html_css_default, 'env', [str], 'HTML stylesheet')
     app.add_config_value('req_reference_text', u'\u2750', 'env', [str], 'Character or string used for cross references')
-
+    app.add_config_value('req_options', {}, 'env', [dict], 'Additional options/fields that can be defined on requirements')
 
     app.connect('config-inited', config_inited)
     app.connect('doctree-read', doctree_read)
