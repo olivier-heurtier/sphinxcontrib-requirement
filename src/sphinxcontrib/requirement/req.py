@@ -24,6 +24,8 @@ from sphinx.util.typing import ExtensionMetadata, OptionSpec
 from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 
+_DEBUG = False
+
 #______________________________________________________________________________
 class req_node(nodes.Element):
     pass
@@ -121,7 +123,6 @@ class ReqDirective(SphinxDirective):
         targetnode = nodes.target('', '', ids=[targetid])
 
         node['ids'].append(targetid)
-#        node['targetid'] = targetid
 
         r = ReSTRenderer(os.path.dirname(__file__))
         kwargs = dict(
@@ -189,6 +190,8 @@ class ReqDomain(Domain):
         pass    # XXX
 
     def add_req(self, req):
+        if _DEBUG:
+            print ('Adding req ' + req['reqid'])
         name = 'req-'+req['reqid']
         anchor = 'req-'+req['reqid']
         self.data['reqs'].append((
@@ -201,6 +204,8 @@ class ReqDomain(Domain):
         ))
 
     def add_reqref(self, reqref, target, docname):
+        if _DEBUG:
+            print ('Adding reqref ' + target)
         name = target + '-' + '%06d'%self.data['N']
         self.data['N'] += 1
         reqref['targetid'] = name
@@ -216,17 +221,30 @@ class ReqDomain(Domain):
 
 #______________________________________________________________________________
 def doctree_read(app, doctree):
-    print('----------------doctree_read-------------------------')
+    if _DEBUG:
+        print('----------------doctree_read-------------------------')
+    dom = app.env.get_domain('req')
+    # we are calculating and setting the target for ReqReference
+    for node in doctree.traverse(ReqReference):
+        # populate its attributes so that it can be a target itself
+        # and record in the domain this node
+        targetid = dom.add_reqref(node, node['reftarget'], node['refdoc'])
+        targetnode = nodes.target('', '', ids=[targetid])
+        node['ids'].append(targetid)
+        node.children = targetnode + node.children
+
+        # refuri will be set in doctree-resolved, once we have identified
+        # all the nodes
 
 #______________________________________________________________________________
 def doctree_resolved(app, doctree, fromdocname):
+    if _DEBUG:
+        print('----------------doctree_resolved--%s-----------------------' % fromdocname)
+    dom = app.env.get_domain('req')
+
     # Now that we have the complete list of requirements (i.e. all source files
     # have been read and all directives executed), we can transform the ReqReference
     # to point to the req_node object
-    # print('----------------doctree_resolved--%s-----------------------' % fromdocname)
-    dom = app.env.get_domain('req')
-
-    # fix refuri for multi doc document
     for node in doctree.traverse(ReqReference):
         # get the target req from the domain data
         match = [
@@ -239,13 +257,10 @@ def doctree_resolved(app, doctree, fromdocname):
             targ = match[0][1]
             node['refuri'] = get_refuri(app.builder, fromdocname, todocname, targ)
 
-            # populate its attributes so that it can be a target itself
-            targetid = dom.add_reqref(node, targ, fromdocname)
-            targetnode = nodes.target('', '', ids=[targetid])
-            node['ids'].append(targetid)
-            node.children = targetnode + node.children
-
-    # XXX to be moved to another phase because ReqReference in other documents are not yet transformed
+    # We have also the complete list of ReqReference (references pointing to a requirement)
+    # This was loaded while reading the source documents
+    # We can transform the ReqRefReference
+    # to point to the ReqReference object
     for node in doctree.traverse(ReqRefReference):
         node['refid'] = node['reftarget']
         # Get all ReqReference nodes, and add a reference to them
@@ -256,22 +271,17 @@ def doctree_resolved(app, doctree, fromdocname):
         ]
         p  = nodes.inline()
         for r in match:
-            # print(r)
             n = nodes.reference('', '', internal=True)
             n['refuri'] = get_refuri(app.builder, node['refdoc'], r[2]['refdoc'], r[1])
             n.append( nodes.inline(text=u'\u2750') )
             p += n
-            # print(n)
         del node[0]
         node += [p]
 
-
-def write_started(app, builder):
-    print('----------------write_started-------------------------')
-
-
 #______________________________________________________________________________
 def config_inited(app, config):
+    if _DEBUG:
+        print('----------------config_inited-----------------------')
     if not config.rst_prolog:
         config.rst_prolog = ''
     config.rst_prolog += '''
@@ -294,11 +304,15 @@ def setup(app: Sphinx) -> ExtensionMetadata:
         html_css_default = f.read()
     app.add_config_value('req_html_css', html_css_default, 'env', [str], 'HTML stylesheet')
     app.connect('config-inited', config_inited)
+    app.connect('doctree-read', doctree_read)
     app.connect('doctree-resolved', doctree_resolved)
-    app.connect('write-started', write_started)
 
     app.add_domain(ReqDomain)
     app.add_node(req_node,
                  html= (html_visit_req_node, depart_req_node),
-                 latex=(latex_visit_req_node, depart_req_node))
+                 latex=(latex_visit_req_node, depart_req_node)
+                 )
 
+    return {
+        'version': '0.1'
+    }

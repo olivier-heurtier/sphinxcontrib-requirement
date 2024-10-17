@@ -4,6 +4,8 @@
 Requirement Extension
 =====================
 
+Req 0002 is referenced there: :req:ref:`0002`
+
 .. req:req:: This is a title
     :id: 0001
     :priority: 1
