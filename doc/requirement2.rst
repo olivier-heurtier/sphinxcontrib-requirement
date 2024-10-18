@@ -1,23 +1,26 @@
 
 .. highlight:: rest
 
-Requirement Extension
-=====================
+Example (part 2)
+================
 
-Req 0001 is referenced there: :req:ref:`0001`
+Req ``REQ-0002`` is referenced there: :req:ref:`REQ-0002`
 
 .. req:req:: This is a second title
-    :reqid: 0002
+    :reqid: REQ-0004
 
-    This is a simple requirement
+    This is a simple requirement to demonstrate references across multiple documents
 
-See :req:req:`0001` and :req:req:`0002`
+See :req:req:`REQ-0002` and :req:req:`REQ-0004`
 
 
 Table
 =====
 
-.. list-table:: Table Témoin
+Full Table
+----------
+
+.. list-table:: This is how a normal table looks
     :widths: 20 80
     :header-rows: 1
     :stub-columns: 1
@@ -32,8 +35,9 @@ Table
       - a
       - b
 
+.. req:reqlist:: This is the list of all requirements (no filtering, no sorting)
 
-.. req:reqlist:: This is a *list* with all options set
+.. req:reqlist:: This is a *list* produced using **all** options (no filtering, no sorting)
     :fields: reqid, title, priority
     :headers: ID, Title, Priority
     :widths: 20 70 10
@@ -42,15 +46,18 @@ Table
     :header-rows: 0
     :stub-columns: 2
 
-.. req:reqlist:: This is **another** *list* with no options
+Filtering and Sorting
+---------------------
 
-.. req:reqlist:: A custom list with a filter
+A list of all requirements with 'second' in the title:
+
+.. req:reqlist::
     :filter: title.find('second')>0
 
     {%for req in reqs%}{{req['reqid']}}, {%endfor%}
 
 
-.. req:reqlist:: A custom output with the full content
+.. req:reqlist:: A custom output with the full content, sorted by reverse ID
     :sort: -reqid
 
 

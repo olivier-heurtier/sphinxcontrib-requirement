@@ -62,8 +62,12 @@ class ReqDirective(SphinxDirective):
         'reqid': directives.unchanged,
         'parent': directives.unchanged, # XXX list of links
         'csv-file': directives.path,
+        'filter': directives.unchanged,
+        'sort': directives.unchanged,
+        # XXX label (for links)
     }
 
+    # XXX define comment separated with | 
     # Transform the directive into a list of docutils nodes
     def run(self):
         # For development
@@ -80,7 +84,7 @@ class ReqDirective(SphinxDirective):
             reqid = options.get('reqid',None)
             if reqid is None:
                 # generate a unique local id
-                reqid = '%03d' % (self.env.new_serialno()+1,)
+                reqid = self.env.config.req_idpattern.format(self.env.new_serialno('req')+1)
             options['reqid'] = reqid
 
             node = req_node('', **options)
@@ -105,10 +109,18 @@ class ReqDirective(SphinxDirective):
             relpath, abspath = self.env.relfn2path(self.options.get('csv-file'))
             self.env.note_dependency(relpath)
 
+            filter = None
+            sort = None
             del self.options['csv-file']
+            if 'filter' in self.options:
+                filter = self.options['filter']
+                del self.options['filter']
+            if 'sort' in self.options:
+                sort = self.options['sort']
+                del self.options['sort']
 
             # Read the csv
-            allnodes = []
+            allreqs = []
             with open(abspath, 'rt') as csvfile:
                 spamreader = csv.reader(csvfile, delimiter=',')
                 fieldnames = next(spamreader)
@@ -121,8 +133,21 @@ class ReqDirective(SphinxDirective):
                     for i in range(len(fieldnames)):
                         v = fieldnames[i]
                         options[v] = row[i]
-                    allnodes.extend(_create_node(options))
+                    allreqs.append(options)
+            # apply filter and sorting
+            allreqs = _filter_and_sort(allreqs, filter, sort)
+
+            # create the nodes for the remaining requirements
+            allnodes = []
+            for req_options in allreqs:
+                allnodes.extend(_create_node(req_options))
             return allnodes
+
+        # only used if csv-file, ignore otherwise
+        if 'filter' in self.options:
+            del self.options['filter']
+        if 'sort' in self.options:
+            del self.options['sort']
 
         title = ''
         if self.arguments:
@@ -138,33 +163,42 @@ class ReqDirective(SphinxDirective):
 
 
 #______________________________________________________________________________
+def _filter_and_sort(reqs :list[req_node], filter :str=None, sort :str=None) -> list[req_node]:
+    # transform the filter to a function
+    if filter:
+        ff = lambda r: eval(filter, dict(), r)
+    else:
+        ff = lambda r: True
+
+    # Filter the input list
+    new_reqs = []
+    for req in reqs:
+        if ff(req):
+            new_reqs.append(req)
+    reqs = new_reqs
+
+    # sort the result
+    if sort:
+        fs_list = [x.strip() for x in sort.split(',')]
+        for x in fs_list:
+            if x and x[0]=='-':
+                reqs.sort(key=lambda r: r.get(x[1:], ''), reverse=True)
+            else:
+                reqs.sort(key=lambda r: r.get(x, ''), reverse=False)
+    return reqs
+
 class reqlist_node(nodes.Element):
     def fill(self, dom, app, doctree):
         if _DEBUG:
             print('----- fill -----')
-        # transform the filter to a function
-        filter = self['filter']
-        if filter:
-            ff = lambda r: eval(filter, dict(), r)
-        else:
-            ff = lambda r: True
-        # Get a list of node
+
+        # Get the list of all requirements
         reqs = []
         for data in dom.data['reqs']:
-            req = data[1]
-            if ff(req):
-                reqs.append(req)
+            reqs.append(data[1])
 
-        # sort the result
-        if self['sort']:
-            fs_list = [x.strip() for x in self['sort'].split(',')]
-            def sortkey(a):
-                return '--'.join([a[x] for x in fs_list])
-            for x in fs_list:
-                if x and x[0]=='-':
-                    reqs.sort(key=lambda r: r.get(x[1:], ''), reverse=True)
-                else:
-                    reqs.sort(key=lambda r: r.get(x, ''), reverse=False)
+        # filter and sort
+        reqs = _filter_and_sort(reqs, self['filter'], self['sort'])
 
         # evaluate the content
         r = ReSTRenderer(os.path.dirname(__file__))
@@ -195,7 +229,7 @@ class reqlist_node(nodes.Element):
             publisher.publish()
             document = publisher.document
 
-        document.children[0]['ids'] = [str(app.env.new_serialno())]
+        document.children[0]['ids'] = [str(app.env.new_serialno())] # XXXX needed?
         # XXX eliminate XRefNode???
         self += document.children
 
@@ -217,15 +251,14 @@ class ReqListDirective(SphinxDirective):
     final_argument_whitespace = True
     option_spec = {
         'filter': directives.unchanged,
+        'sort': directives.unchanged,
         'headers': directives.unchanged,
         'fields': directives.unchanged,
-        'sort': directives.unchanged,
         'align': directives.unchanged,
         'header-rows': directives.unchanged,
         'stub-columns': directives.unchanged,
         'width': directives.unchanged,
         'widths': directives.unchanged,
-       
         }
 
     def run(self):
@@ -427,6 +460,8 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     app.add_config_value('req_html_css', html_css_default, 'env', [str], 'HTML stylesheet')
     app.add_config_value('req_reference_text', u'\u2750', 'env', [str], 'Character or string used for cross references')
     app.add_config_value('req_options', {}, 'env', [dict], 'Additional options/fields that can be defined on requirements')
+    app.add_config_value('req_idpattern', 'REQ-{:04d}', 'env', [str], 'Additional options/fields that can be defined on requirements')
+    # XXX css as a file + possibility to customize the rst, html, latex
 
     app.connect('config-inited', config_inited)
     app.connect('doctree-read', doctree_read)

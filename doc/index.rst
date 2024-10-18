@@ -7,6 +7,7 @@ Sphinx Extension for Requirement
     :numbered:
 
     intro
+    manual
     requirement1
     requirement2
     annexes/index
