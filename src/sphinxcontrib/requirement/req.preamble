@@ -1,0 +1,12 @@
+% https://mirror.ibcp.fr/pub/CTAN/macros/latex/contrib/mdframed/mdframed.pdf
+\usepackage[framemethod=TikZ]{mdframed}
+\usepackage{bbding}
+\usepackage{pifont}
+\usepackage{marginnote}
+
+\DeclareUnicodeCharacter{2750}{\ding{238} }
+
+\definecolor{xxxreqbg}{rgb}{0.98,0.98,0.98}
+\newmdenv[skipabove=3,linewidth=0pt]{xxxreq}
+
+\renewcommand*{\marginfont}{\sffamily}
