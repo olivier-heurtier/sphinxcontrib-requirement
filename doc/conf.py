@@ -7,7 +7,7 @@ author = 'Olivier Heurtier'
 master_doc = 'index'
 exclude_patterns = []
 
-extensions = ['sphinxcontrib.requirement.req']
+extensions = ['sphinxcontrib.requirement']
 
 latex_elements = {
 'extraclassoptions': 'openany,oneside',

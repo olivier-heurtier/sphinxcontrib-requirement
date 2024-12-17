@@ -161,3 +161,31 @@ req_links
 
     In your table, you can then use the pseudo attributes ``_parents`` and ``_children`` to render
     properly the list of requirements (the parents or the children in this example)
+
+To better customize the rendering, you can also place in the root directory of the document the follwing files:
+
+.. list-table:: Customization Files
+    :header-rows: 1
+
+    * - File
+      - Description
+
+    * - :file:`req.css`
+      - The CSS file included in all generated HTML pages
+
+    * - :file:`req.preamble`
+      - The LaTeX preamble added when generating PDF
+
+    * - :file:`req.html.jinja2`
+      - The Jinja2 template used when generating HTML. Can be used to customize how the requirement ID is rendered
+    
+    * - :file:`req.latex.jinja2`
+      - The Jinja2 template used when generating LaTeX/PDF. Can be used to customize how the requirement ID is rendered
+
+    * - :file:`req.rst.jinja2`
+      - The Jinja2 template used to render a requirement. Must output a valid rst document.
+
+    * - :file:`reqlist.rst.jinja2`
+      - The Jinja2 template used to render a requirement list. Must output a valid rst document.
+
+Default files are included in this package and will be used when none are available in the document.

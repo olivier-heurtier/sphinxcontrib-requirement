@@ -24,7 +24,6 @@ import os
 import csv
 import pickle
 import textwrap
-from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from docutils import nodes
 from docutils.parsers.rst import directives
@@ -43,10 +42,11 @@ from sphinx.writers.latex import LaTeXTranslator
 
 # XXX HTML: links local to the page behave differently
 # XXX support label (when IDs are unknown)
+# XXX dump a reqlist in a CSV
 
 _DEBUG = False
 
-# typing of directive option
+# typing of directive option to define links (list of IDs)
 def link(argument):
     if not argument.strip():
         ret = []
@@ -75,15 +75,17 @@ class req_node(nodes.Element):
     pass
 
 def html_visit_req_node(self: HTML5Translator, node: req_node) -> None:
-    r = ReSTRenderer(os.path.dirname(__file__))
-    s = r.render('req.html', node.attributes)
+    r = ReSTRenderer( [self.builder.app.env.srcdir, os.path.dirname(__file__)] )
+    s = r.render('req.html.jinja2', node.attributes)
+    self.builder.app.env.note_dependency(os.path.join(self.builder.app.env.srcdir, 'req.html.jinja2'))
     v,d = s.split('---CONTENT---')
     self.body.append(v)
     self._req = d
 
 def latex_visit_req_node(self: LaTeXTranslator, node: req_node) -> None:
-    r = LaTeXRenderer(os.path.dirname(__file__))
-    s = r.render('req.latex', node.attributes)
+    r = LaTeXRenderer( [self.builder.app.env.srcdir, os.path.dirname(__file__)] )
+    s = r.render('req.latex.jinja2', node.attributes)
+    self.builder.app.env.note_dependency(os.path.join(self.builder.app.env.srcdir, 'req.latex.jinja2'))
     v,d = s.split('---CONTENT---')
     self.body.append(v)
     self._req = d
@@ -114,13 +116,14 @@ class ReqDirective(SphinxDirective):
     def run(self):
         # For development
         if _DEBUG:
-            self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'reqlist.rst'))
-            self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.rst'))
-            self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.html'))
-            self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.latex'))
+            self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'reqlist.rst.jinja2'))
+            self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.rst.jinja2'))
+            self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.html.jinja2'))
+            self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.latex.jinja2'))
             self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.preamble'))
             self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.css'))
             self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.py'))
+        self.env.note_dependency(os.path.join(self.env.srcdir, 'req.rst.jinja2'))
 
         def _create_node(options):
             reqid = options.get('reqid',None)
@@ -141,8 +144,8 @@ class ReqDirective(SphinxDirective):
 
             node['ids'].append(targetid)
 
-            r = ReSTRenderer(os.path.dirname(__file__))
-            s = r.render('req.rst', options)
+            r = ReSTRenderer( [self.env.srcdir,os.path.dirname(__file__)] )
+            s = r.render('req.rst.jinja2', options)
 
             sub_nodes = self.parse_text_to_nodes(s)
             node += sub_nodes
@@ -257,7 +260,7 @@ class reqlist_node(nodes.Element):
         reqs = _filter_and_sort(reqs, self['filter'], self['sort'])
 
         # evaluate the content
-        r = ReSTRenderer(os.path.dirname(__file__))
+        r = ReSTRenderer( [app.srcdir, os.path.dirname(__file__)] )
         kwargs = dict(
             reqs=reqs,
             caption=self['caption'],
@@ -272,7 +275,8 @@ class reqlist_node(nodes.Element):
         if self['content']:
             s = r.render_string(self['content'], kwargs)
         else:
-            s = r.render('reqlist.rst', kwargs)
+            s = r.render('reqlist.rst.jinja2', kwargs)
+            app.builder.env.note_dependency(os.path.join(app.srcdir, 'reqlist.rst.jinja2'))
 
         # parse the resulting string (from sphinx.builders.Builder.read_doc)
         # with the directives and roles active
@@ -647,12 +651,22 @@ def config_inited(app, config):
 #______________________________________________________________________________
 def setup(app: Sphinx) -> ExtensionMetadata:
     # config: req_html_style, req_latex_preamble
-    with open(os.path.join(os.path.dirname(__file__), 'req.preamble'), 'r') as f:
-        latex_preamble_default = f.read()
+    if os.path.isfile(os.path.join(app.srcdir, 'req.preamble')):
+        with open(os.path.join(app.srcdir, 'req.preamble'), 'r') as f:
+            latex_preamble_default = f.read()
+    else:
+        with open(os.path.join(os.path.dirname(__file__), 'req.preamble'), 'r') as f:
+            latex_preamble_default = f.read()
     app.add_config_value('req_latex_preamble', latex_preamble_default, 'env', [str], 'LaTeX preamble added in the config')
-    with open(os.path.join(os.path.dirname(__file__), 'req.css'), 'r') as f:
-        html_css_default = f.read()
+
+    if os.path.isfile(os.path.join(app.srcdir, 'req.css')):
+        with open(os.path.join(app.srcdir, 'req.css'), 'r') as f:
+            html_css_default = f.read()
+    else:
+        with open(os.path.join(os.path.dirname(__file__), 'req.css'), 'r') as f:
+            html_css_default = f.read()
     app.add_config_value('req_html_css', html_css_default, 'env', [str], 'HTML stylesheet')
+
     app.add_config_value('req_reference_text', u'\u2750', 'env', [str], 'Character or string used for cross references')
     app.add_config_value('req_options', {}, 'env', [dict], 'Additional options/fields that can be defined on requirements')
     app.add_config_value('req_links', {}, 'env', [dict], 'Additional links between requirements')
