@@ -205,6 +205,12 @@ class ReqDirective(SphinxDirective):
             content='\n'.join(self.content)
         else:
             content=''
+
+        # split using a single '|' to extract the comment (if any)
+        parts = content.split('\n|\n')
+        content = parts[0]
+        if len(parts)>1:
+            self.options['comment'] = '\n'.join(parts[1:])
         self.options['title'] = title
         self.options['content'] = content
 

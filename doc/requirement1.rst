@@ -35,7 +35,7 @@ Declaration
     :reqid: REQ-0001
     :parents: REQ-0004, CSV-002
 
-    This is a minimal requirement, with no option and an ID auto generated
+    This is a minimal requirement, with no option
 
 Req ``REQ-0004`` is referenced there: :req:ref:`REQ-0004`
 
@@ -47,7 +47,7 @@ Req ``REQ-0002`` is referenced there: :req:ref:`REQ-0002`
     :contract: c1
     :parents: CSV-002
 
-    This is a requirement with all possible options defined...
+    This is a requirement with a lot of options defined...
 
     The description can span multiple lines and includes **ReST** *markups*.
 
@@ -62,9 +62,11 @@ See :req:req:`REQ-0004`
     :reqid: REQ-0003
     :priority: 1
 
-    This is a requirement with all possible options defined...
+    This is a requirement with again a lot of options and with a comment
 
-    The description can span multiple lines and includes **ReST** *markups*.
+    |
+
+    The comment can span multiple lines and includes **ReST** *markups*.
 
 
 See :req:req:`REQ-0004`
