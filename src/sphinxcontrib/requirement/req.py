@@ -271,22 +271,23 @@ class reqlist_node(nodes.Element):
         # with the directives and roles active
         app.builder.env.prepare_settings('reqlist.rst')
         publisher = app.registry.get_publisher(app, 'restructuredtext')
-        app.builder.env.temp_data['_parser'] = publisher.parser
         publisher.settings.record_dependencies = DependencyList()
         with sphinx_domains(app.env), rst.default_role('reqlist.rst', app.config.default_role):
             publisher.set_source(source=io.StringIO(s), source_path='reqlist.rst')
             publisher.publish()
             document = publisher.document
-        # cleanup
-        app.builder.env.temp_data.clear()
-        app.builder.env.ref_context.clear()
 
         # fix docname in all nodes of the document
         # fix also the corresponding data in env
         for node in document.traverse(ReqReference):
             node['refdoc'] = fromdocname
-        
-        document.children[0]['ids'] = [str(app.env.new_serialno())] # XXXX needed?
+
+        # fix any ids that could be duplicated due to a local env
+        # for now, only with table
+        for node in document.traverse(nodes.table):
+            if 'ids' in node and node['ids'] and node['ids'][0].startswith('id'):
+                node['ids'] = ['reqlist%d'  % app.env.new_serialno('reqlist')]
+
         self += document.children
 
 
