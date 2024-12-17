@@ -22,6 +22,7 @@ Global process:
 import io
 import os
 import csv
+import pickle
 import textwrap
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
@@ -40,8 +41,7 @@ from sphinx.util.typing import ExtensionMetadata
 from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 
-# XXX bad links, differences between HTML & PDF
-# XXX when run multiple times, ReqRefRefences keeps growing
+# XXX HTML: links local to the page behave differently
 
 _DEBUG = False
 
@@ -239,7 +239,7 @@ def _filter_and_sort(reqs :list[req_node], filter :str=None, sort :str=None) -> 
 class reqlist_node(nodes.Element):
     def fill(self, dom, app, doctree, fromdocname):
         if _DEBUG:
-            print('----- fill -----')
+            print('----- fill ----- ' + fromdocname)
 
         # Get the list of all requirements
         reqs = []
@@ -287,7 +287,6 @@ class reqlist_node(nodes.Element):
             node['refdoc'] = fromdocname
         
         document.children[0]['ids'] = [str(app.env.new_serialno())] # XXXX needed?
-        # XXX eliminate XRefNode???
         self += document.children
 
 
@@ -391,13 +390,18 @@ class ReqDomain(Domain):
             yield (x[0], x[1]['reqid'], x[2], x[3], x[4], x[5])
 
     def clear_doc(self, docname):
+        if _DEBUG:
+            print('------------- clear_doc %s ----------------' % (docname,) )
+            print(len(self.data['reqs']), len(self.data['reqrefs']))
         # remove all objects from docname
         self.data['reqs'] = list(filter(lambda x: x[3]!=docname, self.data['reqs']))
         self.data['reqrefs'] = list(filter(lambda x: x[3]!=docname, self.data['reqrefs']))
+        if _DEBUG:
+            print(len(self.data['reqs']), len(self.data['reqrefs']))
 
     def add_req(self, req, docname):
         if _DEBUG:
-            print ('Adding req ' + req['reqid'])
+            print ('Adding req ' + req['reqid'] + ' from ' + docname)
         name = 'req-'+req['reqid']
         anchor = 'req-'+req['reqid']
         self.data['reqs'].append((
@@ -411,9 +415,9 @@ class ReqDomain(Domain):
 
     def add_reqref(self, reqref, target, docname):
         if _DEBUG:
-            print ('Adding reqref ' + target)
+            print ('Adding reqref ' + target + ' from ' + docname)
         name = target + '-' + '%06d'%self.data['N']
-        self.data['N'] += 1 # XXX not robust
+        self.data['N'] += 1
         reqref['targetid'] = name
         self.data['reqrefs'].append((
             name,
@@ -429,13 +433,13 @@ class ReqDomain(Domain):
 def doctree_read(app, doctree):
     if _DEBUG:
         print('----------------doctree_read-------------------------')
-    dom = app.env.get_domain('req')
+    # dom = app.env.get_domain('req')
 
 import pprint
 #______________________________________________________________________________
 def env_updated(app, env):
     if _DEBUG:
-        print('----------------env-updated--%s-----------------------')
+        print('----------------env-updated-------------------------')
         print('docs: ' + str(env.all_docs.keys()))
 
     dom = env.get_domain('req')
@@ -455,7 +459,7 @@ def env_updated(app, env):
 
     # process all pseudo attributes (from links) and replace with real values (ReqReference)
     # step 1 - fill attribute values
-    # {reqid -> {link -> set(ids)}
+    # links = {reqid -> {link -> set(ids)}
     links = {}
     link_name = {}
     for l, rl in env.config.req_links.items():
@@ -479,6 +483,8 @@ def env_updated(app, env):
     reqrefs_just_added = set()
     for docname in env.all_docs.keys():
         doctree = env._write_doc_doctree_cache[docname]
+        if _DEBUG:
+            print('Removing req_links_node from ' + docname)
         for node in doctree.traverse(req_links_node):
             # get the req from the domain data
             p  = nodes.inline()
@@ -496,7 +502,7 @@ def env_updated(app, env):
                     n = ReqReference('', '', internal=True)
                     reqrefs_just_added.add(n)
                     n['reftarget'] = r
-                    n['refdoc'] = docname   # XXX or is it the refdoc of the req_node?
+                    n['refdoc'] = docname
                     targetid = dom.add_reqref(n, n['reftarget'], n['refdoc'])
                     targetnode = nodes.target('', '', ids=[targetid])
                     n['ids'].append(targetid)
@@ -529,6 +535,32 @@ def env_updated(app, env):
             # refuri will be set in doctree-resolved, once we have identified
             # all the nodes
 
+    # since we will reexecute queries in doctree_resolved
+    # we don't want to keep old ReqReference in domain
+    # let's reinit completely the list
+    dom.data['reqrefs'] = []
+    for docname in env.all_docs.keys():
+        doctree = env._write_doc_doctree_cache[docname]
+
+        for reqref in doctree.traverse(ReqReference):
+            name = reqref['targetid']
+            dom.data['reqrefs'].append((
+                name,
+                reqref,
+                'reqref',
+                docname,
+                name,
+                1,
+            ))
+
+    # update pickled doctree (Latex builder is starting from the cache of pickled doctree)
+    # we need to update env._pickled_doctree_cache[docname]
+    # do not save in a file, content would not be purged correctly when read again
+    for docname in env.all_docs.keys():
+        doctree = env._write_doc_doctree_cache[docname]
+        s = pickle.dumps(doctree, pickle.HIGHEST_PROTOCOL)
+        env._pickled_doctree_cache[docname] = s
+        
     # make sure that all doc are rewritten
     return list(env.all_docs.keys())
 
@@ -542,6 +574,8 @@ def doctree_resolved(app, doctree, fromdocname):
     # have been read and all directives executed), we can transform the ReqReference
     # to point to the req_node object
     for node in doctree.traverse(ReqReference):
+        if 'refuri' in node:
+            continue
         # get the target req from the domain data
         match = [
             (docname, anchor, req)
@@ -553,12 +587,11 @@ def doctree_resolved(app, doctree, fromdocname):
             targ = match[0][1]
             node['refuri'] = get_refuri(app.builder, fromdocname, todocname, targ)
 
-    # We have also the complete list of ReqReference (references pointing to a requirement)
-    # This was loaded while reading the source documents
+    # We have now the complete list of ReqReference (references pointing to a requirement)
     # We can transform the ReqRefReference
     # to point to the ReqReference object
     for node in doctree.traverse(ReqRefReference):
-        node['refid'] = node['reftarget']
+        # node['refid'] = node['reftarget']
         # Get all ReqReference nodes, and add a reference to them
         match = [
             (docname, anchor, reqref)
@@ -567,12 +600,18 @@ def doctree_resolved(app, doctree, fromdocname):
         ]
         p  = nodes.inline()
         for r in match:
+            if _DEBUG:
+                print("Adding a reference to ReqReference ",node['refdoc'], r[2]['refdoc'], r[1])
             n = nodes.reference('', '', internal=True)
             n['refuri'] = get_refuri(app.builder, node['refdoc'], r[2]['refdoc'], r[1])
             n.append( nodes.inline(text=app.config.req_reference_text) )
             p += n
-        del node[0]
-        node += [p]
+
+        node.replace_self(p)
+        # del node[0]
+        # node += [p]
+    for node in doctree.traverse(ReqRefReference):
+        print('**** ERROR')
 
 #______________________________________________________________________________
 def config_inited(app, config):
