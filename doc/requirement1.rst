@@ -9,8 +9,9 @@ Req 0002 is referenced there: :req:ref:`0002`
 Req 0001 is referenced there: :req:ref:`0001`
 
 .. req:req:: This is a title
-    :id: 0001
+    :reqid: 0001
     :priority: 1
+    :contract: c1
 
     This is a requirement with all possible options defined...
 
@@ -24,7 +25,7 @@ Req 0001 is referenced there: :req:ref:`0001`
 See :req:req:`0002`
 
 .. req:req:: This is a title
-    :id: 0003
+    :reqid: 0003
     :priority: 1
 
     This is a requirement with all possible options defined...
@@ -37,3 +38,7 @@ See :req:req:`0002`
 See :req:req:`0001`
 
 Req 0001 is referenced there: :req:ref:`0001`
+
+
+.. req:req::
+    :csv-file: test1.csv

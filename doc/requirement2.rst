@@ -7,7 +7,7 @@ Requirement Extension
 Req 0001 is referenced there: :req:ref:`0001`
 
 .. req:req:: This is a second title
-    :id: 0002
+    :reqid: 0002
 
     This is a simple requirement
 
@@ -55,10 +55,11 @@ Table
 
 
     .. list-table:: {{caption}}
-        :widths: 10 70 20
+        :widths: 10 70 10 20
 
         * - ID
           - Description
+          - Contract
           - Ref
 
     {%for req in reqs%}
@@ -67,6 +68,7 @@ Table
 
             {{req['content']|indent(8)}}
 
+          - {{req['contract']|upper}}
           - :req:ref:`{{req['reqid']}}`
     {%endfor%}
 
