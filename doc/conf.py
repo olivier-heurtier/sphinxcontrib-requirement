@@ -10,9 +10,6 @@ exclude_patterns = []
 extensions = ['sphinxcontrib.requirement.req']
 
 latex_elements = {
-'preamble':r'''
-\\usepackage[numbered]{bookmark}
-''',
 'atendofbody': r'''
   \listoftables
   \listoffigures
