@@ -24,7 +24,7 @@ from sphinx.util.typing import ExtensionMetadata
 from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 
-# XXX bad links
+# XXX bad links, differences between HTML & PDF
 
 _DEBUG = False
 
