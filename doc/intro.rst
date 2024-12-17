@@ -9,5 +9,5 @@ Introduction
 Identification
 --------------
 
-This document describes the Sphinx extension ``requirement``.
+This document describes the Sphinx extension ``sphinxcontrib-requirement``.
 

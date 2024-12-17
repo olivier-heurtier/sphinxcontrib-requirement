@@ -1,30 +1,17 @@
 # sphinxcontrib-requirement
 Sphinx extension to manage requirements
 
-import from csv
-Export to csv
+- Define your requirements in rst file or in a CSV file that you can edit with Excel or LibreOffice.
+- Customize your data model to add attributes or links to requirements
+- Query and sort the requirements to generate customizable tables
 
-Configuration
+Install with:
 
-Requirements
+    pip install sc-req
 
-    id (ex: SYS-1)
-    status (DRAFT, APPROVED, REJECTED)
-    contract (C1, C2)
-    version (1, 2, 3)
+Use in your Sphinx document with one line in your conf.py:
 
-    priority (HIGH, MEDIUM, LOW)
-    type (FUNC, NONFUNC, PROJECT, etc.)
-    subtype (DATA, USECASE, ..., PERFORMANCE, ..., TRAINING, ...)
+    extensions = ['sphinxcontrib.requirement']
 
-    source (DOC #n, WORKSHOP #n, ...)
-    subsystem
-    target_version
-    status (DRAFT, APPROVED, DEPRECATED)
+Check the full documentation for more details.
 
-
-Links
-
-    :link: name:id
-
-Template for html and latex per type
