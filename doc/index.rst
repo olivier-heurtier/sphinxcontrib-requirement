@@ -10,5 +10,6 @@ Sphinx Extension for Requirement
     manual
     requirement1
     requirement2
+    matrix
     annexes/index
 

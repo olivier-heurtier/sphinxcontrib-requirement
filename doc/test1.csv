@@ -1,6 +1,6 @@
-reqid,title,content,priority,contract
+reqid,title,content,priority,contract,branches
 CSV-001,Title 1,"With a list:
 
 - sss
-- oiuoi",1,c1
-CSV-002,Title 2,**bold**,2,c3
+- oiuoi",1,c1,
+CSV-002,Title 2,**bold**,2,c3, CSV-001

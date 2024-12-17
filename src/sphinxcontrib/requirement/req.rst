@@ -4,4 +4,8 @@ Priority: *{{priority|default('-')}}*
 
 Parents: {{parents|links}}
 
-Links: :req:ref:`{{reqid}}`
+Branches: {{branches|links}}
+
+Children: :req:req:`children::{{reqid}}`
+
+This requirement is quoted there: :req:ref:`{{reqid}}`

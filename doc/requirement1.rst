@@ -20,6 +20,7 @@ Req ``REQ-0002`` is referenced there: :req:ref:`REQ-0002`
     :reqid: REQ-0002
     :priority: 1
     :contract: c1
+    :parents: CSV-002
 
     This is a requirement with all possible options defined...
 

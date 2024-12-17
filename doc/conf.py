@@ -24,6 +24,7 @@ req_options = dict(
     priority="directives.positive_int",
 )
 
-req_links = dict(
-    parents="children"
-)
+req_links = {
+    "parents":"children",
+    "branches":"leaves",
+}

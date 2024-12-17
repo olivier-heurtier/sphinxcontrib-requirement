@@ -24,19 +24,29 @@ from sphinx.util.typing import ExtensionMetadata
 from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 
+# XXX bad links
+
 _DEBUG = False
 
 # typing of directive option
 def link(argument):
     ret = [x.strip() for x in argument.split(',')]
     if _DEBUG:
-        print('Transforming [%s] -> [%s]' % (argument, ret))
+        print('Transforming(link) [%s] -> [%s]' % (argument, ret))
     return ret
 
 # filter in Jinja templates
 def links_filter(value):
-    return ', '.join([f':req:req:`{x}`' for x in value])
-
+    if type(value) in [list, tuple]:
+        ret = ', '.join([f':req:req:`{x}`' for x in value])
+    elif type(value) is str and value:
+        v = value.strip()
+        ret = f':req:req:`{v}`'
+    else:
+        ret = ''
+    if _DEBUG:
+        print('Transforming(filter) [%s] -> [%s]' % (value, ret))
+    return ret
 #______________________________________________________________________________
 class req_node(nodes.Element):
     pass
@@ -231,7 +241,7 @@ class reqlist_node(nodes.Element):
 
         # parse the resulting string (from sphinx.builders.Builder.read_doc)
         # with the directives and roles active
-        app.builder.env.prepare_settings('reqlist.rst')
+        app.builder.env.prepare_settings('reqlist.rst') # XXX why reqlist.rst ? Source of bad link?
         publisher = app.registry.get_publisher(app, 'restructuredtext')
         app.builder.env.temp_data['_parser'] = publisher.parser
         publisher.settings.record_dependencies = DependencyList()
@@ -404,6 +414,48 @@ def doctree_resolved(app, doctree, fromdocname):
     # execute the query for each reqlist
     for node in doctree.traverse(reqlist_node):
         node.fill(dom, app, doctree)
+
+    # Expand the reverse links (example: children) if any
+    rlinks = {}
+    for k, v in app.env.config.req_links.items():
+        rlinks[v] = k
+    if _DEBUG:
+        print('rlinks: ', rlinks)
+    for node in doctree.traverse(ReqReference):
+        parts = node['reftarget'].split('::')
+        if len(parts)==2 and parts[0] in rlinks:
+            if _DEBUG:
+                print('rlinks: parts:', parts)
+            # calculate
+            match = [
+                (docname, anchor, req)
+                for name, req, typ, docname, anchor, prio in dom.data['reqs']
+                if parts[1] in req.get(rlinks[parts[0]],[])
+            ]
+            if _DEBUG:
+                print('rlinks: match:', match)
+            # replace this reference with a list of references
+            p  = nodes.inline()
+            for r in match:
+                if _DEBUG:
+                    print('  rlinks: ', r[2]['reqid'])
+                n = ReqReference('', '', internal=True)
+
+                n['reftarget'] = r[2]['reqid']
+                n['refdoc'] = r[0]
+                targetid = dom.add_reqref(n, n['reftarget'], n['refdoc'])
+                targetnode = nodes.target('', '', ids=[targetid])
+                n['ids'].append(targetid)
+                n.children = targetnode + n.children
+
+                n.append( nodes.literal(text=r[2]['reqid'], classes=['xref', 'req', 'req-req']) )
+
+                p += n
+                p += nodes.inline(text=', ')
+            if match:
+                p.pop()
+            node.parent.replace_self(p)
+
 
     # Now that we have the complete list of requirements (i.e. all source files
     # have been read and all directives executed), we can transform the ReqReference
