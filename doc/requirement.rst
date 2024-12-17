@@ -16,3 +16,8 @@ Requirement Extension
     * One
     * Two
 
+.. xxxreq:: This is a second title
+    :id: 0002
+
+    This is a simple requirement
+
