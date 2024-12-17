@@ -42,6 +42,7 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 
 # XXX HTML: links local to the page behave differently
+# XXX support label (when IDs are unknown)
 
 _DEBUG = False
 

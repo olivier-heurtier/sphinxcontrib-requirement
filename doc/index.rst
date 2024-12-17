@@ -11,5 +11,5 @@ Sphinx Extension for Requirement
     requirement1
     requirement2
     matrix
-    annexes/index
+    changelog
 

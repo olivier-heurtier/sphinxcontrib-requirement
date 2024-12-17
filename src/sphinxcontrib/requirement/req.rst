@@ -1,7 +1,5 @@
 {{content|indent(0)}}
 
-COMMENT:
-
 {{comment|default('')|indent(0)}}
 
 Priority: *{{priority|default('-')}}*

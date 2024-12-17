@@ -1,8 +1,13 @@
 
 .. highlight:: rest
 
-Chapter 1
-=========
+Examples (part 1)
+=================
+
+Basic Examples
+--------------
+
+Here you will find some basic requirements demonstrating references, backward or forward into the list of rst files.
 
 .. req:req:: This is req 01-01
     :reqid: REQ-0101
@@ -25,11 +30,10 @@ Link in another rst file :req:req:`REQ-0202`
 
 Backward link to :req:req:`REQ-0101`.
 
-Examples
-========
+Customization Examples
+----------------------
 
-Declaration
------------
+The requirements in this chapter illustrate how to use the customized options and links.
 
 .. req:req:: This is a title
     :reqid: REQ-0001
@@ -75,17 +79,20 @@ See :req:req:`REQ-0002`
 
 Req ``REQ-0002`` is referenced there: :req:ref:`REQ-0002`
 
-CSV
----
+Importing from a CSV
+--------------------
 
-Requirements Imported for c1:
+Requirements can be imported from an external CSV file.
+
+First we import only the requirements for c1:
 
 .. req:req::
     :csv-file: test1.csv
     :filter: contract=='c1'
 
-Requirements Imported for c3:
+And then the requirements for c3:
 
 .. req:req::
     :csv-file: test1.csv
     :filter: contract=='c3'
+

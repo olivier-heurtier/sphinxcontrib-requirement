@@ -4,6 +4,8 @@
 Matrices
 ========
 
+This chapter demonstrates some usage of :rst:dir:`req:reqlist` with customized content.
+
 .. req:reqlist:: Tracability
     :sort: reqid
 

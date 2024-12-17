@@ -1,8 +1,13 @@
 
 .. highlight:: rest
 
-Chapter 2
-=========
+Examples (part 2)
+=================
+
+Basic Examples
+--------------
+
+Here you will find some basic requirements demonstrating references, backward or forward into the list of rst files.
 
 .. req:req:: This is req 02-01
     :reqid: REQ-0201
@@ -25,25 +30,21 @@ Link in another rst file :req:req:`REQ-0102`
 
 Backward link to :req:req:`REQ-0201`.
 
-
-Example (part 2)
-================
-
-Req ``REQ-0002`` is referenced there: :req:ref:`REQ-0002`
-
-.. req:req:: This is a second title
+.. req:req:: This is yet another example
     :reqid: REQ-0004
 
     This is a simple requirement to demonstrate references across multiple documents
 
 See :req:req:`REQ-0002` and :req:req:`REQ-0004`
 
+Req ``REQ-0002`` is referenced there: :req:ref:`REQ-0002`
 
 Table
 =====
 
-Full Table
-----------
+This chapter demonstrates the :rst:dir:`req:reqlist` directive.
+
+This is a normal table:
 
 .. list-table:: This is how a normal table looks
     :widths: 20 80
@@ -60,27 +61,29 @@ Full Table
       - a
       - b
 
+This is the list of all requirements defined in this document:
+
 .. req:reqlist:: This is the list of all requirements (no filtering, no sorting)
 
+This is still the list of all the requirements but with a customized list of columns.
+
 .. req:reqlist:: This is a *list* produced using **all** options (no filtering, no sorting)
-    :fields: reqid, title, priority
-    :headers: ID, Title, Priority
-    :widths: 20 70 10
+    :fields: reqid, title, priority, _parents
+    :headers: ID, Title, Priority, Parents
+    :widths: 20 70 10 20
     :width: 80%
     :align: right
     :header-rows: 0
     :stub-columns: 2
 
-Filtering and Sorting
----------------------
-
-A list of all requirements with 'second' in the title:
+The same directive can be used to produce a plain list, with no table:
 
 .. req:reqlist::
     :filter: title.find('second')>0
 
     {%for req in reqs%}{{req['reqid']}}, {%endfor%}
 
+This directive accepts a content to better customize the rendering.
 
 .. req:reqlist:: A custom output with the full content, sorted by reverse ID
     :sort: -reqid
@@ -104,4 +107,7 @@ A list of all requirements with 'second' in the title:
           - :req:ref:`{{req['reqid']}}`
     {%endfor%}
 
+.. warning::
 
+    Do not forget to *indent* as needed values that can span multiple lines.
+    
