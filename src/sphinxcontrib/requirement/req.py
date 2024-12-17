@@ -273,7 +273,7 @@ def doctree_resolved(app, doctree, fromdocname):
         for r in match:
             n = nodes.reference('', '', internal=True)
             n['refuri'] = get_refuri(app.builder, node['refdoc'], r[2]['refdoc'], r[1])
-            n.append( nodes.inline(text=u'\u2750') )
+            n.append( nodes.inline(text=app.config.req_reference_text) )
             p += n
         del node[0]
         node += [p]
@@ -303,6 +303,9 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     with open(os.path.join(os.path.dirname(__file__), 'req.css'), 'r') as f:
         html_css_default = f.read()
     app.add_config_value('req_html_css', html_css_default, 'env', [str], 'HTML stylesheet')
+    app.add_config_value('req_reference_text', u'\u2750', 'env', [str], 'Character or string used for cross references')
+
+
     app.connect('config-inited', config_inited)
     app.connect('doctree-read', doctree_read)
     app.connect('doctree-resolved', doctree_resolved)
