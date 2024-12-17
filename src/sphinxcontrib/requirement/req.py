@@ -301,7 +301,9 @@ class ReqDomain(Domain):
             yield (x[0], x[1]['reqid'], x[2], x[3], x[4], x[5])
 
     def clear_doc(self, docname):
-        pass    # XXX
+        # remove all objects from docname
+        self.data['reqs'] = list(filter(lambda x: x[3]!=docname, self.data['reqs']))
+        self.data['reqrefs'] = list(filter(lambda x: x[3]!=docname, self.data['reqrefs']))
 
     def add_req(self, req):
         if _DEBUG:
