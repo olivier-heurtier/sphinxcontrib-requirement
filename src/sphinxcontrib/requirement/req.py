@@ -208,8 +208,10 @@ def _filter_and_sort(reqs :list[req_node], filter :str=None, sort :str=None) -> 
                 reqs.sort(key=lambda r: r.get(x, ''), reverse=False)
     return reqs
 
+from copy import copy
+
 class reqlist_node(nodes.Element):
-    def fill(self, dom, app, doctree):
+    def fill(self, dom, app, doctree, fromdocname):
         if _DEBUG:
             print('----- fill -----')
 
@@ -242,7 +244,7 @@ class reqlist_node(nodes.Element):
 
         # parse the resulting string (from sphinx.builders.Builder.read_doc)
         # with the directives and roles active
-        app.builder.env.prepare_settings('reqlist.rst') # XXX why reqlist.rst ? Source of bad link?
+        app.builder.env.prepare_settings('reqlist.rst')
         publisher = app.registry.get_publisher(app, 'restructuredtext')
         app.builder.env.temp_data['_parser'] = publisher.parser
         publisher.settings.record_dependencies = DependencyList()
@@ -250,7 +252,15 @@ class reqlist_node(nodes.Element):
             publisher.set_source(source=io.StringIO(s), source_path='reqlist.rst')
             publisher.publish()
             document = publisher.document
+        # cleanup
+        app.builder.env.temp_data.clear()
+        app.builder.env.ref_context.clear()
 
+        # fix docname in all nodes of the document
+        # fix also the corresponding data in env
+        for node in document.traverse(ReqReference):
+            node['refdoc'] = fromdocname
+        
         document.children[0]['ids'] = [str(app.env.new_serialno())] # XXXX needed?
         # XXX eliminate XRefNode???
         self += document.children
@@ -414,7 +424,7 @@ def doctree_resolved(app, doctree, fromdocname):
 
     # execute the query for each reqlist
     for node in doctree.traverse(reqlist_node):
-        node.fill(dom, app, doctree)
+        node.fill(dom, app, doctree, fromdocname)
 
     # Expand the reverse links (example: children) if any
     rlinks = {}

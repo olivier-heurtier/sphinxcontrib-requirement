@@ -10,6 +10,7 @@ exclude_patterns = []
 extensions = ['sphinxcontrib.requirement.req']
 
 latex_elements = {
+'extraclassoptions': 'openany,oneside',
 'atendofbody': r'''
   \listoftables
   \listoffigures

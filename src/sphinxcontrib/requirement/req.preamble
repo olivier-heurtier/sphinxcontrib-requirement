@@ -1,4 +1,6 @@
 % https://mirror.ibcp.fr/pub/CTAN/macros/latex/contrib/mdframed/mdframed.pdf
+% https://www.overleaf.com/learn/latex/Margin_notes
+% https://ctan.tetaneutral.net/macros/latex/contrib/marginnote/marginnote.pdf
 \usepackage[framemethod=TikZ]{mdframed}
 \usepackage{bbding}
 \usepackage{pifont}
@@ -9,4 +11,4 @@
 \definecolor{reqbg}{rgb}{0.98,0.98,0.98}
 \newmdenv[skipabove=3,linewidth=0pt,backgroundcolor=reqbg,innerleftmargin=0pt,innerrightmargin=0pt]{req}
 
-\renewcommand*{\marginfont}{\sffamily}
+\renewcommand*{\marginfont}{\scriptsize\sffamily}
