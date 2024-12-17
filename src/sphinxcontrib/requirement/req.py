@@ -26,6 +26,17 @@ from sphinx.writers.latex import LaTeXTranslator
 
 _DEBUG = False
 
+# typing of directive option
+def link(argument):
+    ret = [x.strip() for x in argument.split(',')]
+    if _DEBUG:
+        print('Transforming [%s] -> [%s]' % (argument, ret))
+    return ret
+
+# filter in Jinja templates
+def links_filter(value):
+    return ', '.join([f':req:req:`{x}`' for x in value])
+
 #______________________________________________________________________________
 class req_node(nodes.Element):
     pass
@@ -60,11 +71,9 @@ class ReqDirective(SphinxDirective):
     final_argument_whitespace = True
     option_spec = {
         'reqid': directives.unchanged,
-        'parent': directives.unchanged, # XXX list of links
         'csv-file': directives.path,
         'filter': directives.unchanged,
         'sort': directives.unchanged,
-        # XXX label (for links)
     }
 
     # XXX define comment separated with | 
@@ -95,6 +104,7 @@ class ReqDirective(SphinxDirective):
             node['ids'].append(targetid)
 
             r = ReSTRenderer(os.path.dirname(__file__))
+            r.env.filters['links'] = links_filter
             s = r.render('req.rst', options)
 
             sub_nodes = self.parse_text_to_nodes(s)
@@ -202,6 +212,7 @@ class reqlist_node(nodes.Element):
 
         # evaluate the content
         r = ReSTRenderer(os.path.dirname(__file__))
+        r.env.filters['links'] = links_filter
         kwargs = dict(
             reqs=reqs,
             caption=self['caption'],
@@ -449,6 +460,9 @@ def config_inited(app, config):
     for k,v in config.req_options.items():
         ReqDirective.option_spec[k] = eval(v)
 
+    for l in config.req_links.keys():
+        ReqDirective.option_spec[l] = link
+
 #______________________________________________________________________________
 def setup(app: Sphinx) -> ExtensionMetadata:
     # config: req_html_style, req_latex_preamble
@@ -460,6 +474,7 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     app.add_config_value('req_html_css', html_css_default, 'env', [str], 'HTML stylesheet')
     app.add_config_value('req_reference_text', u'\u2750', 'env', [str], 'Character or string used for cross references')
     app.add_config_value('req_options', {}, 'env', [dict], 'Additional options/fields that can be defined on requirements')
+    app.add_config_value('req_links', {}, 'env', [dict], 'Additional links between requirements')
     app.add_config_value('req_idpattern', 'REQ-{:04d}', 'env', [str], 'Additional options/fields that can be defined on requirements')
     # XXX css as a file + possibility to customize the rst, html, latex
 

@@ -8,6 +8,7 @@ Declaration
 -----------
 
 .. req:req:: This is a title
+    :parents: REQ-0004, CSV-002
 
     This is a minimal requirement, with no option and an ID auto generated
 

@@ -23,3 +23,7 @@ req_options = dict(
     contract="lambda argument: directives.choice(argument, ('c1', 'c3'))",
     priority="directives.positive_int",
 )
+
+req_links = dict(
+    parents="children"
+)
