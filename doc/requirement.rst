@@ -6,6 +6,7 @@ Requirement Extension
 
 .. xxxreq:: This is a title
     :id: 0001
+    :priority: 1
 
     This is a requirement with all possible options defined...
 

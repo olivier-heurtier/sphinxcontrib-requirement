@@ -33,29 +33,24 @@ DOCID = ''
 class xxxreq_node(nodes.Element):
     pass
 
-def visit_xxxreq_node(self: HTML5Translator, node: xxxreq_node) -> None:
+def html_visit_xxxreq_node(self: HTML5Translator, node: xxxreq_node) -> None:
     r = ReSTRenderer(os.path.dirname(__file__))
     s = r.render('req.html', node.attributes)
-    self.body.append(s.split('---CUT HERE---')[0])
-    # XXX push/pop
-    self._req = s.split('---CUT HERE---')[1]
-
-def depart_xxxreq_node(self: HTML5Translator, node: xxxreq_node) -> None:
-    self.body.append(self._req)
-    self._req = None
+    v,d = s.split('---CONTENT---')
+    self.body.append(v)
+    self._req = d
 
 def latex_visit_xxxreq_node(self: LaTeXTranslator, node: xxxreq_node) -> None:
     r = LaTeXRenderer(os.path.dirname(__file__))
     s = r.render('req.latex', node.attributes)
-    self.body.append(s.split('---CUT HERE---')[0])
-    # XXX push/pop
-    self._req = s.split('---CUT HERE---')[1]
+    v,d = s.split('---CONTENT---')
+    self.body.append(v)
+    self._req = d
 
 
-def latex_depart_xxxreq_node(self: LaTeXTranslator, node: xxxreq_node) -> None:
+def depart_xxxreq_node(self: LaTeXTranslator, node: xxxreq_node) -> None:
     self.body.append(self._req)
     self._req = None
-    return
 
 class XXXReq(SphinxDirective):
     """
@@ -83,6 +78,14 @@ class XXXReq(SphinxDirective):
     }
 
     def run(self):
+        # XXX For development
+        self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.rst'))
+        self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.html'))
+        self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.latex'))
+        self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.preamble'))
+        self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.css'))
+        self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.py'))
+
         # if 'csv-file' in self.options:
         #     # we are importing a bunch of req
         #     relpath, abspath = self.env.relfn2path(directives.path(self.options.get('csv-file')))
@@ -118,27 +121,19 @@ class XXXReq(SphinxDirective):
         node['title'] = title
         node['content'] = content
 
-        # r = ReSTRenderer(os.path.dirname(__file__))
-        # kwargs = dict(
-        #         reqid=reqid,
-        #         title=title,
-        #         content=content)
-        # kwargs.update(self.options)
-        # s = r.render('req.rst', kwargs)
-        # self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.rst'))
-        self.env.note_dependency(os.path.join(os.path.dirname(__file__), 'req.html'))
+        r = ReSTRenderer(os.path.dirname(__file__))
+        kwargs = dict(
+                reqid=reqid,
+                title=title,
+                content=content)
+        kwargs.update(self.options)
+        s = r.render('req.rst', kwargs)
 
-        nodes = self.parse_text_to_nodes(content)   # s
+        nodes = self.parse_text_to_nodes(s)
         node += nodes
-        return [node] #+nodes
+        return [node]
 
-import pprint
-def html_page_context(app, pagename, templatename, context, doctree):
-    pprint.pprint(context.keys())
-    # pprint.pprint(context['js_tag'])
-    # pprint.pprint(context['css_tag'])
-    # context['css_tag'].
-
+import textwrap
 def config_inited(app, config):
     if not config.rst_prolog:
         config.rst_prolog = ''
@@ -146,40 +141,24 @@ def config_inited(app, config):
 .. raw:: html
 
     <style>
-        .xxxreq {
-            background-color: red;
-        }
-        .xxxreqid {
-            margin-left:-4em;
-            margin-bottom: -2.3em;
-        }
+    ''' + textwrap.indent(config.req_html_css, '        ') + '''
     </style>
     '''
     config.latex_elements.setdefault('preamble', '')
-    config.latex_elements['preamble'] += r'''
-
-\usepackage[framemethod=TikZ]{mdframed}
-\usepackage{bbding}
-\usepackage{pifont}
-\usepackage{marginnote}
-
-\DeclareUnicodeCharacter{2750}{\ding{238} }
-
-\definecolor{xxxreqbg}{rgb}{0.85,0.85,0.85}
-\definecolor{xxxreqidbg}{rgb}{0.95,0.95,0.95}
-
-\newmdenv[backgroundcolor=xxxreqbg]{xxxreq}
-\newmdenv[roundcorner=5pt,leftmargin=20,rightmargin=10,backgroundcolor=xxxreqidbg]{sphinxclassxxxreqid}
-
-\renewcommand*{\marginfont}{\color{red}\sffamily}
-    '''
-    print(config.latex_elements)
+    config.latex_elements['preamble'] += config.req_latex_preamble
 
 def setup(app):
-    # XXX config: req_html_style, req_latex_preamble
+    # config: req_html_style, req_latex_preamble
+    with open(os.path.join(os.path.dirname(__file__), 'req.preamble'), 'r') as f:
+        latex_preamble_default = f.read()
+    app.add_config_value('req_latex_preamble', latex_preamble_default, 'env', [str], 'LaTeX preamble added in the config')
+    with open(os.path.join(os.path.dirname(__file__), 'req.css'), 'r') as f:
+        html_css_default = f.read()
+    app.add_config_value('req_html_css', html_css_default, 'env', [str], 'HTML stylesheet')
+
     app.add_directive('xxxreq', XXXReq)
     app.add_node(xxxreq_node,
-                 html=(visit_xxxreq_node, depart_xxxreq_node),
-                 latex=(latex_visit_xxxreq_node, latex_depart_xxxreq_node))
+                 html= (html_visit_xxxreq_node, depart_xxxreq_node),
+                 latex=(latex_visit_xxxreq_node, depart_xxxreq_node))
     
     app.connect('config-inited', config_inited)
