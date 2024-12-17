@@ -216,13 +216,14 @@ class ReqDomain(Domain):
 
 #______________________________________________________________________________
 def doctree_read(app, doctree):
-    # properly set the list of references
     print('----------------doctree_read-------------------------')
 
 #______________________________________________________________________________
 def doctree_resolved(app, doctree, fromdocname):
-    # Finish configuration of ReqRefReference nodes
-    print('----------------doctree_resolved--%s-----------------------' % fromdocname)
+    # Now that we have the complete list of requirements (i.e. all source files
+    # have been read and all directives executed), we can transform the ReqReference
+    # to point to the req_node object
+    # print('----------------doctree_resolved--%s-----------------------' % fromdocname)
     dom = app.env.get_domain('req')
 
     # fix refuri for multi doc document
@@ -257,7 +258,7 @@ def doctree_resolved(app, doctree, fromdocname):
         for r in match:
             # print(r)
             n = nodes.reference('', '', internal=True)
-            n['refuri'] = get_refuri(app.builder, fromdocname, r[0], r[1])
+            n['refuri'] = get_refuri(app.builder, node['refdoc'], r[2]['refdoc'], r[1])
             n.append( nodes.inline(text=u'\u2750') )
             p += n
             # print(n)
