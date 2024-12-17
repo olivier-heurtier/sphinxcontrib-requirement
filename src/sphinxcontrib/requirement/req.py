@@ -208,8 +208,6 @@ def _filter_and_sort(reqs :list[req_node], filter :str=None, sort :str=None) -> 
                 reqs.sort(key=lambda r: r.get(x, ''), reverse=False)
     return reqs
 
-from copy import copy
-
 class reqlist_node(nodes.Element):
     def fill(self, dom, app, doctree, fromdocname):
         if _DEBUG:
