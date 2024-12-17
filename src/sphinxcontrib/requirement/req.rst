@@ -2,10 +2,14 @@
 
 Priority: *{{priority|default('-')}}*
 
-Parents: {{parents|links}}
+.. list-table:: Links for {{reqid}}
+    :widths: 50 50
+    :width: 100
 
-Branches: {{branches|links}}
+    * - Parents: {{parents|links}}
+      - Children: :req:req:`children::{{reqid}}`
 
-Children: :req:req:`children::{{reqid}}`
+    * - Branches: {{branches|links}}
+      - Leaves: :req:req:`leaves::{{reqid}}`
 
-This requirement is quoted there: :req:ref:`{{reqid}}`
+This requirement is referenced there: :req:ref:`{{reqid}}`

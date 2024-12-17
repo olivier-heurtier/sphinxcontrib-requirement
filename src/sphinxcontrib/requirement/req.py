@@ -110,6 +110,7 @@ class ReqDirective(SphinxDirective):
 
             targetid = 'req-'+reqid
             targetnode = nodes.target('', '', ids=[targetid])
+            node += targetnode
 
             node['ids'].append(targetid)
 
@@ -122,7 +123,7 @@ class ReqDirective(SphinxDirective):
 
             self.env.get_domain('req').add_req(node)
 
-            return [targetnode, node]
+            return [node]
 
         if 'csv-file' in self.options:
             # we are importing a bunch of req
@@ -454,7 +455,7 @@ def doctree_resolved(app, doctree, fromdocname):
                 p += nodes.inline(text=', ')
             if match:
                 p.pop()
-            node.parent.replace_self(p)
+            node.replace_self(p)
 
 
     # Now that we have the complete list of requirements (i.e. all source files

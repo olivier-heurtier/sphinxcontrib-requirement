@@ -1,6 +1,31 @@
 
 .. highlight:: rest
 
+Chapter 2
+=========
+
+.. req:req:: This is req 02-01
+    :reqid: REQ-0201
+
+    First requirements for local links (links in the same rst file)
+
+Forward link to :req:req:`REQ-0203`.
+
+.. req:req:: This is req 02-02
+    :reqid: REQ-0202
+
+    Second requirements for links in another rst file
+
+Link in another rst file :req:req:`REQ-0102`
+
+.. req:req:: This is req 02-03
+    :reqid: REQ-0203
+
+    Third requirements for local links (links in the same rst file)
+
+Backward link to :req:req:`REQ-0201`.
+
+
 Example (part 2)
 ================
 

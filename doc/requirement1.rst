@@ -1,13 +1,38 @@
 
 .. highlight:: rest
 
-Example (part 1)
-================
+Chapter 1
+=========
+
+.. req:req:: This is req 01-01
+    :reqid: REQ-0101
+
+    First requirements for local links (links in the same rst file)
+
+Forward link to :req:req:`REQ-0103`.
+
+.. req:req:: This is req 01-02
+    :reqid: REQ-0102
+
+    Second requirements for links in another rst file
+
+Link in another rst file :req:req:`REQ-0202`
+
+.. req:req:: This is req 01-03
+    :reqid: REQ-0103
+
+    Third requirements for local links (links in the same rst file)
+
+Backward link to :req:req:`REQ-0101`.
+
+Examples
+========
 
 Declaration
 -----------
 
 .. req:req:: This is a title
+    :reqid: REQ-0001
     :parents: REQ-0004, CSV-002
 
     This is a minimal requirement, with no option and an ID auto generated
