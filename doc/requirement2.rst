@@ -55,15 +55,19 @@ Table
 
 
     .. list-table:: {{caption}}
+        :widths: 10 70 20
 
         * - ID
           - Description
+          - Ref
 
     {%for req in reqs%}
         * - {{req['reqid']}}
           - {{req['title']}}
 
             {{req['content']|indent(8)}}
+
+          - :req:ref:`{{req['reqid']}}`
     {%endfor%}
 
 

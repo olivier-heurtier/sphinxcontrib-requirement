@@ -3,24 +3,23 @@
 # https://www.sphinx-doc.org/en/master/extdev/domainapi.html#sphinx.domains.Domain
 # https://www.sphinx-doc.org/en/master/development/tutorials/extending_syntax.html#tutorial-extending-syntax
 
+import io
 import os
 import textwrap
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 from docutils import nodes
-from docutils.parsers.rst import Directive, directives
+from docutils.parsers.rst import directives
 from sphinx.domains import Domain
 from sphinx.roles import XRefRole
-from sphinx.util.docutils import SphinxDirective, SphinxRole
+from sphinx.util.docutils import SphinxDirective
 from sphinx.util.template import ReSTRenderer, LaTeXRenderer
-from docutils.statemachine import ViewList
-from sphinx.util.nodes import nested_parse_with_titles
-
-from collections.abc import Set
+from sphinx.util.docutils import sphinx_domains
+from docutils.utils import DependencyList
+from sphinx.util import rst
 
 from sphinx.application import Sphinx
-from sphinx.environment import BuildEnvironment
-from sphinx.util.typing import ExtensionMetadata, OptionSpec
+from sphinx.util.typing import ExtensionMetadata
 from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 
@@ -140,8 +139,6 @@ class ReqDirective(SphinxDirective):
         return [targetnode, node]
 
 #______________________________________________________________________________
-import sphinx.util.parsing
-import docutils.parsers.rst
 class reqlist_node(nodes.Element):
     def fill(self, dom, app, doctree):
         if _DEBUG:
@@ -188,12 +185,17 @@ class reqlist_node(nodes.Element):
         else:
             s = r.render('reqlist.rst', kwargs)
 
-        parser = docutils.parsers.rst.Parser()
-        settings = docutils.frontend.OptionParser(
-                        components=(docutils.parsers.rst.Parser,)
-                        ).get_default_values()
-        document = docutils.utils.new_document('source', settings=settings)
-        parser.parse(s, document)
+        # parse the resulting string (from sphinx.builders.Builder.read_doc)
+        # with the directives and roles active
+        app.builder.env.prepare_settings('reqlist.rst')
+        publisher = app.registry.get_publisher(app, 'restructuredtext')
+        app.builder.env.temp_data['_parser'] = publisher.parser
+        publisher.settings.record_dependencies = DependencyList()
+        with sphinx_domains(app.env), rst.default_role('reqlist.rst', app.config.default_role):
+            publisher.set_source(source=io.StringIO(s), source_path='reqlist.rst')
+            publisher.publish()
+            document = publisher.document
+
         document.children[0]['ids'] = [str(app.env.new_serialno())]
         # XXX eliminate XRefNode???
         self += document.children
