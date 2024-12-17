@@ -9,11 +9,15 @@ Configuration
 Requirements
 
     id (ex: SYS-1)
-    priority (HIGH, MEDIUM, LOW)
-    type (FUNC, NONFUNC)
-    subtype (DATA, USECASE, PERFORMANCE, ...)
+    status (DRAFT, APPROVED, REJECTED)
+    contract (C1, C2)
+    version (1, 2, 3)
 
-    source (CONTRACT, WORKSHOP #n, ...)
+    priority (HIGH, MEDIUM, LOW)
+    type (FUNC, NONFUNC, PROJECT, etc.)
+    subtype (DATA, USECASE, ..., PERFORMANCE, ..., TRAINING, ...)
+
+    source (DOC #n, WORKSHOP #n, ...)
     subsystem
     target_version
     status (DRAFT, APPROVED, DEPRECATED)

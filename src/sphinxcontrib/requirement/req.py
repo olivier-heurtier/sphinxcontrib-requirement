@@ -140,6 +140,117 @@ class ReqDirective(SphinxDirective):
         return [targetnode, node]
 
 #______________________________________________________________________________
+import sphinx.util.parsing
+import docutils.parsers.rst
+class reqlist_node(nodes.Element):
+    def fill(self, dom, app, doctree):
+        if _DEBUG:
+            print('----- fill -----')
+        # transform the filter to a function
+        filter = self['filter']
+        if filter:
+            ff = lambda r: eval(filter, dict(), r)
+        else:
+            ff = lambda r: True
+        # Get a list of node
+        reqs = []
+        for data in dom.data['reqs']:
+            req = data[1]
+            if ff(req):
+                reqs.append(req)
+
+        # sort the result
+        if self['sort']:
+            fs_list = [x.strip() for x in self['sort'].split(',')]
+            def sortkey(a):
+                return '--'.join([a[x] for x in fs_list])
+            for x in fs_list:
+                if x and x[0]=='-':
+                    reqs.sort(key=lambda r: r.get(x[1:], ''), reverse=True)
+                else:
+                    reqs.sort(key=lambda r: r.get(x, ''), reverse=False)
+
+        # evaluate the content
+        r = ReSTRenderer(os.path.dirname(__file__))
+        kwargs = dict(
+            reqs=reqs,
+            caption=self['caption'],
+            align=self['align'],
+            width=self['width'],
+            widths=self['widths'],
+            header_rows=self['header-rows'],
+            stub_columns=self['stub-columns'],
+            fields=self['fields'],
+            headers=self['headers'],
+        )
+        if self['content']:
+            s = r.render_string(self['content'], kwargs)
+        else:
+            s = r.render('reqlist.rst', kwargs)
+
+        parser = docutils.parsers.rst.Parser()
+        settings = docutils.frontend.OptionParser(
+                        components=(docutils.parsers.rst.Parser,)
+                        ).get_default_values()
+        document = docutils.utils.new_document('source', settings=settings)
+        parser.parse(s, document)
+        document.children[0]['ids'] = [str(app.env.new_serialno())]
+        # XXX eliminate XRefNode???
+        self += document.children
+
+
+def visit_reqlist_node(self, node: reqlist_node) -> None:
+    return
+
+def depart_reqlist_node(self: LaTeXTranslator, node: reqlist_node) -> None:
+    return
+
+class ReqListDirective(SphinxDirective):
+    """
+    A list of requirements.
+    """
+
+    has_content = True
+    required_arguments = 0
+    optional_arguments = 1
+    final_argument_whitespace = True
+    option_spec = {
+        'filter': directives.unchanged,
+        'headers': directives.unchanged,
+        'fields': directives.unchanged,
+        'sort': directives.unchanged,
+        'align': directives.unchanged,
+        'header-rows': directives.unchanged,
+        'stub-columns': directives.unchanged,
+        'width': directives.unchanged,
+        'widths': directives.unchanged,
+       
+        }
+
+    def run(self):
+        # Simply insert an empty reqlist node which will be replaced later
+        # when process_req_nodes is called
+        
+        node = reqlist_node('')
+
+        node['align'] = self.options.get('align', 'left')
+        node['header-rows'] = self.options.get('header-rows', '1')
+        node['stub-columns'] = self.options.get('stub-columns', '0')
+        node['width'] = self.options.get('width', '100%')
+        node['widths'] = self.options.get('widths', '20 80')
+
+        node['filter'] = self.options.get('filter',None)
+        node['sort'] = self.options.get('sort',None)
+        node['headers'] = [x.strip() for x in self.options.get('headers','ID, Title').split(',')]
+        node['fields'] = [x.strip() for x in self.options.get('fields','reqid, title').split(',')]
+        caption = ''
+        if self.arguments:
+            caption = self.arguments[0]
+        node['caption'] = caption
+        node['content'] = '\n'.join(self.content)
+        return [node]
+
+#______________________________________________________________________________
 def get_refuri(builder, fromdocname, todocname, target):
     if target:
         return builder.get_relative_uri(fromdocname, todocname) + '#' + target
@@ -162,6 +273,7 @@ class ReqDomain(Domain):
 
     directives = {
         'req': ReqDirective,
+        'reqlist': ReqListDirective,
     }
     roles = {
         'req': XRefRole(nodeclass=ReqReference),
@@ -242,6 +354,10 @@ def doctree_resolved(app, doctree, fromdocname):
         print('----------------doctree_resolved--%s-----------------------' % fromdocname)
     dom = app.env.get_domain('req')
 
+    # execute the query for each reqlist
+    for node in doctree.traverse(reqlist_node):
+        node.fill(dom, app, doctree)
+
     # Now that we have the complete list of requirements (i.e. all source files
     # have been read and all directives executed), we can transform the ReqReference
     # to point to the req_node object
@@ -314,6 +430,10 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     app.add_node(req_node,
                  html= (html_visit_req_node, depart_req_node),
                  latex=(latex_visit_req_node, depart_req_node)
+                 )
+    app.add_node(reqlist_node,
+                 html= (visit_reqlist_node, depart_reqlist_node),
+                 latex=(visit_reqlist_node, depart_reqlist_node)
                  )
 
     return {

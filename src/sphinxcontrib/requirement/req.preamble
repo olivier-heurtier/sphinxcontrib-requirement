@@ -4,9 +4,9 @@
 \usepackage{pifont}
 \usepackage{marginnote}
 
-\DeclareUnicodeCharacter{2750}{\ding{238} }
+\DeclareUnicodeCharacter{2750}{\SquareShadowTopRight}
 
 \definecolor{reqbg}{rgb}{0.98,0.98,0.98}
-\newmdenv[skipabove=3,linewidth=0pt]{req}
+\newmdenv[skipabove=3,linewidth=0pt,backgroundcolor=reqbg,innerleftmargin=0pt,innerrightmargin=0pt]{req}
 
 \renewcommand*{\marginfont}{\sffamily}
