@@ -1,8 +1,8 @@
 Requirement extension for Sphinx
 ================================
 
-.. image:: https://readthedocs.org/projects/sc-req/badge/?version=latest
-    :target: https://sc-req.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/sphinxcontrib-requirement/badge/?version=latest
+    :target: https://sphinxcontrib-requirement.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
 .. image:: https://img.shields.io/pypi/l/sc-req.svg
@@ -34,5 +34,5 @@ Use in your Sphinx document with one line in your conf.py::
 
     extensions = ['sphinxcontrib.requirement']
 
-Check the full documentation for more details.
+Check the `full documentation <https://sphinxcontrib-requirement.readthedocs.io/en/latest/>`_ for more details.
 

@@ -2,7 +2,6 @@
 Change Log
 ==========
 
-Version 1.x.y
--------------
+**Version 1.0.0**
 
 First initial version.
