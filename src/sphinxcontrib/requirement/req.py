@@ -3,6 +3,22 @@
 # https://www.sphinx-doc.org/en/master/extdev/domainapi.html#sphinx.domains.Domain
 # https://www.sphinx-doc.org/en/master/development/tutorials/extending_syntax.html#tutorial-extending-syntax
 
+"""
+Global process:
+
+- <N/A>: Read all rst documents and build a database of all requirements in the domain
+  (domain.data['reqs']) through domain.add_req method
+- Once all documents have been read and that domain.data['reqs'] is up-to-date:
+
+  - <env_updated>: Execute reqlist queries and convert to req attribute
+  - <env_updated>: process all pseudo attributes (from links) and replace with real values (text or ReqReference)
+  - <env_updated>: Add a target node for all ReqReference
+
+  - <doctree-resolved>: Then lastly process all ReqRefReference nodes to point to the corresponding (list of) ReqReference
+
+"""
+
+
 import io
 import os
 import csv
@@ -13,7 +29,7 @@ from docutils import nodes
 from docutils.parsers.rst import directives
 from sphinx.domains import Domain
 from sphinx.roles import XRefRole
-from sphinx.util.docutils import SphinxDirective
+from sphinx.util.docutils import SphinxDirective, SphinxRole
 from sphinx.util.template import ReSTRenderer, LaTeXRenderer
 from sphinx.util.docutils import sphinx_domains
 from docutils.utils import DependencyList
@@ -25,28 +41,34 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 
 # XXX bad links, differences between HTML & PDF
+# XXX when run multiple times, ReqRefRefences keeps growing
 
 _DEBUG = False
 
 # typing of directive option
 def link(argument):
-    ret = [x.strip() for x in argument.split(',')]
+    if not argument.strip():
+        ret = []
+    else:
+        ret = [x.strip() for x in argument.split(',')]
     if _DEBUG:
-        print('Transforming(link) [%s] -> [%s]' % (argument, ret))
+        print('Transforming(link) <%s> -> <%s>' % (argument, ret))
     return ret
 
-# filter in Jinja templates
-def links_filter(value):
-    if type(value) in [list, tuple]:
-        ret = ', '.join([f':req:req:`{x}`' for x in value])
-    elif type(value) is str and value:
-        v = value.strip()
-        ret = f':req:req:`{v}`'
-    else:
-        ret = ''
-    if _DEBUG:
-        print('Transforming(filter) [%s] -> [%s]' % (value, ret))
-    return ret
+#______________________________________________________________________________
+class req_links_node(nodes.Element):
+    # will contain a reqid and a link name
+    pass
+
+class ReqLinks(SphinxRole):
+    def run(self): # -> tuple[list[Node], list[system_message]]:
+        parts = self.text.split('::')
+        opts = {}
+        opts['link'] = parts[0]
+        opts['reqid'] = parts[1]
+        p  = req_links_node('', **opts)
+        return ([p], [])
+
 #______________________________________________________________________________
 class req_node(nodes.Element):
     pass
@@ -105,6 +127,10 @@ class ReqDirective(SphinxDirective):
                 # generate a unique local id
                 reqid = self.env.config.req_idpattern.format(self.env.new_serialno('req')+1)
             options['reqid'] = reqid
+            # create pseudo properties for links, they will be converted later on
+            for l, rl in self.env.config.req_links.items():
+                options['_'+l] = ':req:links:`{}::{}`'.format(l, reqid)
+                options['_'+rl] = ':req:links:`{}::{}`'.format(rl, reqid)
 
             node = req_node('', **options)
 
@@ -115,13 +141,12 @@ class ReqDirective(SphinxDirective):
             node['ids'].append(targetid)
 
             r = ReSTRenderer(os.path.dirname(__file__))
-            r.env.filters['links'] = links_filter
             s = r.render('req.rst', options)
 
             sub_nodes = self.parse_text_to_nodes(s)
             node += sub_nodes
 
-            self.env.get_domain('req').add_req(node)
+            self.env.get_domain('req').add_req(node, self.env.docname)
 
             return [node]
 
@@ -153,7 +178,10 @@ class ReqDirective(SphinxDirective):
                     options.update(self.options)
                     for i in range(len(fieldnames)):
                         v = fieldnames[i]
-                        options[v] = row[i]
+                        if v in ReqDirective.option_spec:
+                            options[v] = ReqDirective.option_spec[v](row[i])
+                        else:
+                            options[v] = row[i]
                     allreqs.append(options)
             # apply filter and sorting
             allreqs = _filter_and_sort(allreqs, filter, sort)
@@ -223,7 +251,6 @@ class reqlist_node(nodes.Element):
 
         # evaluate the content
         r = ReSTRenderer(os.path.dirname(__file__))
-        r.env.filters['links'] = links_filter
         kwargs = dict(
             reqs=reqs,
             caption=self['caption'],
@@ -342,6 +369,7 @@ class ReqDomain(Domain):
     roles = {
         'req': XRefRole(nodeclass=ReqReference),
         'ref': XRefRole(nodeclass=ReqRefReference),
+        'links': ReqLinks(),
     }
 
     initial_data = {
@@ -367,7 +395,7 @@ class ReqDomain(Domain):
         self.data['reqs'] = list(filter(lambda x: x[3]!=docname, self.data['reqs']))
         self.data['reqrefs'] = list(filter(lambda x: x[3]!=docname, self.data['reqrefs']))
 
-    def add_req(self, req):
+    def add_req(self, req, docname):
         if _DEBUG:
             print ('Adding req ' + req['reqid'])
         name = 'req-'+req['reqid']
@@ -376,7 +404,7 @@ class ReqDomain(Domain):
             name,               # the unique key to the requirement (fixed prefix + ID)
             req,                # the node itself
             'req',              # the type of node
-            self.env.docname,   # the docname for this requirement
+            docname,            # the docname for this requirement
             anchor,             # the anchor name, used in reference/target
             0,                  # the priority
         ))
@@ -385,7 +413,7 @@ class ReqDomain(Domain):
         if _DEBUG:
             print ('Adding reqref ' + target)
         name = target + '-' + '%06d'%self.data['N']
-        self.data['N'] += 1
+        self.data['N'] += 1 # XXX not robust
         reqref['targetid'] = name
         self.data['reqrefs'].append((
             name,
@@ -402,69 +430,113 @@ def doctree_read(app, doctree):
     if _DEBUG:
         print('----------------doctree_read-------------------------')
     dom = app.env.get_domain('req')
-    # we are calculating and setting the target for ReqReference
-    for node in doctree.traverse(ReqReference):
-        # populate its attributes so that it can be a target itself
-        # and record in the domain this node
-        targetid = dom.add_reqref(node, node['reftarget'], node['refdoc'])
-        targetnode = nodes.target('', '', ids=[targetid])
-        node['ids'].append(targetid)
-        node.children = targetnode + node.children
 
-        # refuri will be set in doctree-resolved, once we have identified
-        # all the nodes
+import pprint
+#______________________________________________________________________________
+def env_updated(app, env):
+    if _DEBUG:
+        print('----------------env-updated--%s-----------------------')
+        print('docs: ' + str(env.all_docs.keys()))
+
+    dom = env.get_domain('req')
+
+    # Execute reqlist queries and convert to req attribute
+    for docname in env.all_docs.keys():
+        # inspired by Environment.get_and_resolve_doctree
+        try:
+            doctree = env._write_doc_doctree_cache[docname]
+            doctree.settings.env = env
+        except KeyError:
+            doctree = env.get_doctree(docname)
+            env._write_doc_doctree_cache[docname] = doctree
+
+        for node in doctree.traverse(reqlist_node):
+            node.fill(dom, app, doctree, docname)
+
+    # process all pseudo attributes (from links) and replace with real values (ReqReference)
+    # step 1 - fill attribute values
+    # {reqid -> {link -> set(ids)}
+    links = {}
+    link_name = {}
+    for l, rl in env.config.req_links.items():
+        link_name[l] = rl
+        link_name[rl] = l
+    for docname in env.all_docs.keys():
+        doctree = env._write_doc_doctree_cache[docname]
+        for node in doctree.traverse(req_node):
+            for l in link_name:
+                for x in node.get(l, []):
+                    links.setdefault(x, dict()).setdefault(link_name[l], set()).add( node['reqid'] )
+                links.setdefault(node['reqid'], dict()).setdefault(l, set()).update( node.get(l, () ) )
+    # apply
+    for docname in env.all_docs.keys():
+        doctree = env._write_doc_doctree_cache[docname]
+        for node in doctree.traverse(req_node):
+            for l in link_name:
+                node[l] = list(links[node['reqid']][l])
+
+    # step 2 - do the replacement
+    reqrefs_just_added = set()
+    for docname in env.all_docs.keys():
+        doctree = env._write_doc_doctree_cache[docname]
+        for node in doctree.traverse(req_links_node):
+            # get the req from the domain data
+            p  = nodes.inline()
+            match = [req
+                for name, req, typ, docname, anchor, prio in dom.data['reqs']
+                if req['reqid']==node['reqid']
+            ]
+            if match and match[0].get(node['link']):
+                # build a list of ReqReference
+                nl = []
+                for x in match[0].get(node['link']):
+                    reqref = ReqReference(x, )
+
+                for r in match[0].get(node['link']):
+                    n = ReqReference('', '', internal=True)
+                    reqrefs_just_added.add(n)
+                    n['reftarget'] = r
+                    n['refdoc'] = docname   # XXX or is it the refdoc of the req_node?
+                    targetid = dom.add_reqref(n, n['reftarget'], n['refdoc'])
+                    targetnode = nodes.target('', '', ids=[targetid])
+                    n['ids'].append(targetid)
+                    n.children = targetnode + n.children
+
+                    n.append( nodes.literal(text=r, classes=['xref', 'req', 'req-req']) )
+
+                    p += n
+                    p += nodes.inline(text=', ')
+                if p.children:
+                    p.pop()
+            node.replace_self(p)
+
+    # Add a target node for all ReqReference
+    for docname in env.all_docs.keys():
+        doctree = env._write_doc_doctree_cache[docname]
+
+        for node in doctree.traverse(ReqReference):
+            # we process only the ReqReference added by Sphinx after parsing a rst
+            # and not the nodes added after replacing a pseudo attribute
+            if node in reqrefs_just_added:
+                continue
+            # populate its attributes so that it can be a target itself
+            # and record in the domain this node
+            targetid = dom.add_reqref(node, node['reftarget'], node['refdoc'])
+            targetnode = nodes.target('', '', ids=[targetid])
+            node['ids'].append(targetid)
+            node.children = targetnode + node.children
+
+            # refuri will be set in doctree-resolved, once we have identified
+            # all the nodes
+
+    # make sure that all doc are rewritten
+    return list(env.all_docs.keys())
 
 #______________________________________________________________________________
 def doctree_resolved(app, doctree, fromdocname):
     if _DEBUG:
         print('----------------doctree_resolved--%s-----------------------' % fromdocname)
     dom = app.env.get_domain('req')
-
-    # execute the query for each reqlist
-    for node in doctree.traverse(reqlist_node):
-        node.fill(dom, app, doctree, fromdocname)
-
-    # Expand the reverse links (example: children) if any
-    rlinks = {}
-    for k, v in app.env.config.req_links.items():
-        rlinks[v] = k
-    if _DEBUG:
-        print('rlinks: ', rlinks)
-    for node in doctree.traverse(ReqReference):
-        parts = node['reftarget'].split('::')
-        if len(parts)==2 and parts[0] in rlinks:
-            if _DEBUG:
-                print('rlinks: parts:', parts)
-            # calculate
-            match = [
-                (docname, anchor, req)
-                for name, req, typ, docname, anchor, prio in dom.data['reqs']
-                if parts[1] in req.get(rlinks[parts[0]],[])
-            ]
-            if _DEBUG:
-                print('rlinks: match:', match)
-            # replace this reference with a list of references
-            p  = nodes.inline()
-            for r in match:
-                if _DEBUG:
-                    print('  rlinks: ', r[2]['reqid'])
-                n = ReqReference('', '', internal=True)
-
-                n['reftarget'] = r[2]['reqid']
-                n['refdoc'] = r[0]
-                targetid = dom.add_reqref(n, n['reftarget'], n['refdoc'])
-                targetnode = nodes.target('', '', ids=[targetid])
-                n['ids'].append(targetid)
-                n.children = targetnode + n.children
-
-                n.append( nodes.literal(text=r[2]['reqid'], classes=['xref', 'req', 'req-req']) )
-
-                p += n
-                p += nodes.inline(text=', ')
-            if match:
-                p.pop()
-            node.replace_self(p)
-
 
     # Now that we have the complete list of requirements (i.e. all source files
     # have been read and all directives executed), we can transform the ReqReference
@@ -521,8 +593,9 @@ def config_inited(app, config):
     for k,v in config.req_options.items():
         ReqDirective.option_spec[k] = eval(v)
 
-    for l in config.req_links.keys():
+    for l, rl in config.req_links.items():
         ReqDirective.option_spec[l] = link
+        ReqDirective.option_spec[rl] = link
 
 #______________________________________________________________________________
 def setup(app: Sphinx) -> ExtensionMetadata:
@@ -541,6 +614,7 @@ def setup(app: Sphinx) -> ExtensionMetadata:
 
     app.connect('config-inited', config_inited)
     app.connect('doctree-read', doctree_read)
+    app.connect('env-updated', env_updated)
     app.connect('doctree-resolved', doctree_resolved)
 
     app.add_domain(ReqDomain)

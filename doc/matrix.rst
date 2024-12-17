@@ -19,8 +19,8 @@ Matrices
     {%for req in reqs%}
         * - {{req['reqid']}}
           - {{req['title']}}
-          - {{req['parents']|links}}
-          - :req:req:`children::{{req['reqid']}}`
+          - {{req['_parents']}}
+          - {{req['_children']}}
     {%endfor%}
 
 .. req:reqlist:: Tree Structure
@@ -38,8 +38,8 @@ Matrices
     {%for req in reqs%}
         * - {{req['reqid']}}
           - {{req['title']}}
-          - {{req['branches']|links}}
-          - :req:req:`leaves::{{req['reqid']}}`
+          - {{req['_branches']}}
+          - {{req['_leaves']}}
     {%endfor%}
 
 

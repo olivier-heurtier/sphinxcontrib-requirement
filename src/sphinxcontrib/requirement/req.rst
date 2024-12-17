@@ -6,10 +6,10 @@ Priority: *{{priority|default('-')}}*
     :widths: 50 50
     :width: 100
 
-    * - Parents: {{parents|links}}
-      - Children: :req:req:`children::{{reqid}}`
+    * - Parents: {{_parents}}
+      - Children: {{_children}}
 
-    * - Branches: {{branches|links}}
-      - Leaves: :req:req:`leaves::{{reqid}}`
+    * - Branches: {{_branches}}
+      - Leaves: {{_leaves}}
 
 This requirement is referenced there: :req:ref:`{{reqid}}`
