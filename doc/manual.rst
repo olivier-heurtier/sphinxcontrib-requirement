@@ -143,6 +143,18 @@ req_options
             subsystem="lambda argument: directives.choice(argument, ('sub1', 'sub2', 'sub3'))",
         )
 
+    The added attributes must be defined with a string that will be evaluated in the scope of the requirement module.
+
+    It is also possible to add a new attribute using Python code::
+  
+        from docutils.parsers.rst import directives
+        from sphinxcontrib.requirement import req
+        def yesno(argument):
+            return directives.choice(argument, ('yes', 'no'))
+        # be aware that docutils/sphinx is lowering the case
+        req.ReqDirective.option_spec['answer'] = yesno
+
+
 req_links
 
     A dictionary of link definitions that can be used to build links between requirements.

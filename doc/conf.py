@@ -25,6 +25,13 @@ req_options = dict(
     priority="directives.positive_int",
 )
 
+from docutils.parsers.rst import directives
+from sphinxcontrib.requirement import req
+def yesno(argument):
+    return directives.choice(argument, ('yes', 'no'))
+# be aware that docutils/sphinx is lowering the case
+req.ReqDirective.option_spec['answer'] = yesno
+
 req_links = {
     "parents":"children",
     "branches":"leaves",

@@ -49,6 +49,7 @@ Req ``REQ-0002`` is referenced there: :req:ref:`REQ-0002`
     :reqid: REQ-0002
     :priority: 1
     :contract: c1
+    :answer: yes
     :parents: CSV-002
 
     This is a requirement with a lot of options defined...
@@ -65,8 +66,9 @@ See :req:req:`REQ-0004`
 .. req:req:: This is a title
     :reqid: REQ-0003
     :priority: 1
+    :children: REQ-0004
 
-    This is a requirement with again a lot of options and with a comment
+    This is a requirement with usage of the reversed link (children) and with a comment
 
     |
 

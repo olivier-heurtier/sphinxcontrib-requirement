@@ -77,7 +77,6 @@ class req_node(nodes.Element):
 def html_visit_req_node(self: HTML5Translator, node: req_node) -> None:
     r = ReSTRenderer( [self.builder.app.env.srcdir, os.path.dirname(__file__)] )
     s = r.render('req.html.jinja2', node.attributes)
-    self.builder.app.env.note_dependency(os.path.join(self.builder.app.env.srcdir, 'req.html.jinja2'))
     v,d = s.split('---CONTENT---')
     self.body.append(v)
     self._req = d
@@ -85,7 +84,6 @@ def html_visit_req_node(self: HTML5Translator, node: req_node) -> None:
 def latex_visit_req_node(self: LaTeXTranslator, node: req_node) -> None:
     r = LaTeXRenderer( [self.builder.app.env.srcdir, os.path.dirname(__file__)] )
     s = r.render('req.latex.jinja2', node.attributes)
-    self.builder.app.env.note_dependency(os.path.join(self.builder.app.env.srcdir, 'req.latex.jinja2'))
     v,d = s.split('---CONTENT---')
     self.body.append(v)
     self._req = d
@@ -446,6 +444,8 @@ def doctree_read(app, doctree):
     if _DEBUG:
         print('----------------doctree_read-------------------------')
     # dom = app.env.get_domain('req')
+    app.env.note_dependency(os.path.join(app.env.srcdir, 'req.html.jinja2'))
+    app.env.note_dependency(os.path.join(app.env.srcdir, 'req.latex.jinja2'))
 
 import pprint
 #______________________________________________________________________________
