@@ -274,7 +274,6 @@ class reqlist_node(nodes.Element):
             s = r.render_string(self['content'], kwargs)
         else:
             s = r.render('reqlist.rst.jinja2', kwargs)
-            app.builder.env.note_dependency(os.path.join(app.srcdir, 'reqlist.rst.jinja2'))
 
         # parse the resulting string (from sphinx.builders.Builder.read_doc)
         # with the directives and roles active
@@ -330,7 +329,8 @@ class ReqListDirective(SphinxDirective):
     def run(self):
         # Simply insert an empty reqlist node which will be replaced later
         # when process_req_nodes is called
-        
+        self.env.note_dependency(os.path.join(self.env.srcdir, 'reqlist.rst.jinja2'))
+
         node = reqlist_node('')
 
         node['align'] = self.options.get('align', 'left')
@@ -657,7 +657,7 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     else:
         with open(os.path.join(os.path.dirname(__file__), 'req.preamble'), 'r') as f:
             latex_preamble_default = f.read()
-    app.add_config_value('req_latex_preamble', latex_preamble_default, 'env', [str], 'LaTeX preamble added in the config')
+    app.add_config_value('req_latex_preamble', latex_preamble_default, 'env', [str]) # LaTeX preamble added in the config
 
     if os.path.isfile(os.path.join(app.srcdir, 'req.css')):
         with open(os.path.join(app.srcdir, 'req.css'), 'r') as f:
@@ -665,13 +665,12 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     else:
         with open(os.path.join(os.path.dirname(__file__), 'req.css'), 'r') as f:
             html_css_default = f.read()
-    app.add_config_value('req_html_css', html_css_default, 'env', [str], 'HTML stylesheet')
+    app.add_config_value('req_html_css', html_css_default, 'env', [str]) # HTML stylesheet
 
-    app.add_config_value('req_reference_text', u'\u2750', 'env', [str], 'Character or string used for cross references')
-    app.add_config_value('req_options', {}, 'env', [dict], 'Additional options/fields that can be defined on requirements')
-    app.add_config_value('req_links', {}, 'env', [dict], 'Additional links between requirements')
-    app.add_config_value('req_idpattern', 'REQ-{:04d}', 'env', [str], 'Additional options/fields that can be defined on requirements')
-    # XXX css as a file + possibility to customize the rst, html, latex
+    app.add_config_value('req_reference_text', u'\u2750', 'env', [str]) # Character or string used for cross references
+    app.add_config_value('req_options', {}, 'env', [dict]) # Additional options/fields that can be defined on requirements
+    app.add_config_value('req_links', {}, 'env', [dict]) # Additional links between requirements
+    app.add_config_value('req_idpattern', 'REQ-{:04d}', 'env', [str]) # Additional options/fields that can be defined on requirements
 
     app.connect('config-inited', config_inited)
     app.connect('doctree-read', doctree_read)
