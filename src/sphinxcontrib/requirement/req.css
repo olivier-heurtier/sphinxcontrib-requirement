@@ -2,8 +2,14 @@
 .req {
     background-color: #FAFAFA;
 }
-.reqid {
-    margin-left:-6em;
-    margin-bottom: -2.8em;
+
+.req .reqid p {
+    margin-bottom:-2em ;
+    text-align: right;
+    margin-right: -10em;
     font-size: 70%;
+}
+
+.req .title p {
+    font-weight:bold;
 }
