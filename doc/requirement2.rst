@@ -39,6 +39,13 @@ See :req:req:`REQ-0002` and :req:req:`REQ-0004`
 
 Req ``REQ-0002`` is referenced there: :req:ref:`REQ-0002`
 
+Generating ID
+-------------
+
+.. req:req:: Generation 2
+
+    This is a second test of ID generation
+
 Table
 =====
 

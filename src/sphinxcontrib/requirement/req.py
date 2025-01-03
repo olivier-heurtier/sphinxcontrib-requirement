@@ -34,6 +34,7 @@ from sphinx.util.template import ReSTRenderer, LaTeXRenderer
 from sphinx.util.docutils import sphinx_domains
 from docutils.utils import DependencyList
 from sphinx.util import rst
+from sphinx.errors import SphinxError
 
 from sphinx.application import Sphinx
 from sphinx.util.typing import ExtensionMetadata
@@ -43,6 +44,7 @@ from sphinx.writers.latex import LaTeXTranslator
 # XXX HTML: links local to the page behave differently
 # XXX support label (when IDs are unknown)
 # XXX dump a reqlist in a CSV
+# XXX option to hide a requirement
 
 _DEBUG = False
 
@@ -127,7 +129,10 @@ class ReqDirective(SphinxDirective):
             reqid = options.get('reqid',None)
             if reqid is None:
                 # generate a unique local id
-                reqid = self.env.config.req_idpattern.format(self.env.new_serialno('req')+1)
+                docnames = list(self.env.app.project.docnames)
+                docnames.sort()
+                doc_idx = docnames.index(self.env.docname)
+                reqid = self.env.config.req_idpattern.format(**dict(doc=doc_idx, serial=self.env.new_serialno('req')+1))
             options['reqid'] = reqid
             # create pseudo properties for links, they will be converted later on
             for l, rl in self.env.config.req_links.items():
@@ -412,6 +417,16 @@ class ReqDomain(Domain):
     def add_req(self, req, docname):
         if _DEBUG:
             print ('Adding req ' + req['reqid'] + ' from ' + docname)
+
+        # reqid MUST be unique
+        match = [req2
+            for name2, req2, typ2, docname2, anchor2, prio2 in self.data['reqs']
+            if req['reqid']==req2['reqid']
+        ]
+        if match:
+            msg = "Requirement ID must be unique. "+req['reqid']+" was defined multiple times"
+            raise SphinxError(msg)
+
         name = 'req-'+req['reqid']
         anchor = 'req-'+req['reqid']
         self.data['reqs'].append((
@@ -670,7 +685,7 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     app.add_config_value('req_reference_text', u'\u2750', 'env', [str]) # Character or string used for cross references
     app.add_config_value('req_options', {}, 'env', [dict]) # Additional options/fields that can be defined on requirements
     app.add_config_value('req_links', {}, 'env', [dict]) # Additional links between requirements
-    app.add_config_value('req_idpattern', 'REQ-{:04d}', 'env', [str]) # Additional options/fields that can be defined on requirements
+    app.add_config_value('req_idpattern', 'REQ-{doc}{serial:03d}', 'env', [str]) # Additional options/fields that can be defined on requirements
 
     app.connect('config-inited', config_inited)
     app.connect('doctree-read', doctree_read)

@@ -117,7 +117,8 @@ req_reference_text
 
 req_idpattern
 
-    A *format* string used when generating a new identifier. Default: ``REQ-{:04d}``
+    A *format* string used when generating a new identifier. This must be a f-string referencing
+    the key ``doc`` and ``serial``. Default: ``REQ-{doc}{serial:03d}``
 
 req_html_css
 

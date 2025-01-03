@@ -98,3 +98,10 @@ And then the requirements for c3:
     :csv-file: test1.csv
     :filter: contract=='c3'
 
+Generating ID
+-------------
+
+.. req:req:: Generation 1
+
+    This is a first test of ID generation
+ 

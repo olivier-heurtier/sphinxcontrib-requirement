@@ -36,3 +36,5 @@ req_links = {
     "parents":"children",
     "branches":"leaves",
 }
+
+req_idpattern = 'GEN-{doc}{serial:03d}'
