@@ -86,9 +86,18 @@ This is still the list of all the requirements but with a customized list of col
 The same directive can be used to produce a plain list, with no table:
 
 .. req:reqlist::
-    :filter: title.find('second')>0
+    :filter: title.find('Generation')>=0
 
-    {%for req in reqs%}{{req['reqid']}}, {%endfor%}
+    {{reqs|join(', ', attribute='reqid')}}
+
+Another example illustrating usage of an attribute not defined on all requirements and
+listing all priority 1 requirements:
+
+.. req:reqlist::
+    :filter: priority==1
+
+    {{reqs|join(', ', attribute='reqid')}}
+
 
 This directive accepts a content to better customize the rendering.
 

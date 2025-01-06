@@ -44,7 +44,9 @@ from sphinx.writers.latex import LaTeXTranslator
 # XXX HTML: links local to the page behave differently
 # XXX support label (when IDs are unknown)
 # XXX dump a reqlist in a CSV
-# XXX option to hide a requirement
+# XXX When a custo req.css is defined, extend the default req.css, do not replace it all
+# XXX filter with direct access to attributes
+# XXX default req.rst.jinja2 with an env for comment
 
 _DEBUG = False
 
@@ -231,9 +233,9 @@ class ReqDirective(SphinxDirective):
 
         # split using a single '|' to extract the comment (if any)
         parts = content.split('\n|\n')
-        content = parts[0]
+        content = parts[0].strip()
         if len(parts)>1:
-            self.options['comment'] = '\n'.join(parts[1:])
+            self.options['comment'] = '\n'.join(parts[1:]).strip()
         self.options['title'] = title
         self.options['content'] = content
 
@@ -244,7 +246,22 @@ class ReqDirective(SphinxDirective):
 def _filter_and_sort(reqs :list[req_node], filter :str=None, sort :str=None) -> list[req_node]:
     # transform the filter to a function
     if filter:
-        ff = lambda r: eval(filter, dict(), r)
+        def _filter(r):
+            # Since custo attributes may not be defined on all requirements
+            # we are trying to set a default value (None) in case of error
+            d = dict()
+            while True:
+                try:
+                    x = eval(filter, d, r)
+                    return x
+                except NameError as exc:
+                    if exc.name in ReqDirective.option_spec.keys():
+                        d[exc.name] = None
+                    else:
+                        raise
+                else:
+                    raise
+        ff = _filter
     else:
         ff = lambda r: True
 
