@@ -48,6 +48,17 @@ from sphinx.writers.latex import LaTeXTranslator
 
 _DEBUG = False
 
+def boolean(argument):
+    if argument.lower() in ['yes','true']:
+        return True
+    if argument.lower() in ['no','false']:
+        return False
+    if type(argument) is int:
+        if argument:
+            return True
+        return False
+    raise ValueError('must evaluate to a boolean')
+
 # typing of directive option to define links (list of IDs)
 def link(argument):
     if not argument.strip():
@@ -77,23 +88,26 @@ class req_node(nodes.Element):
     pass
 
 def html_visit_req_node(self: HTML5Translator, node: req_node) -> None:
-    r = ReSTRenderer( [self.builder.app.env.srcdir, os.path.dirname(__file__)] )
-    s = r.render('req.html.jinja2', node.attributes)
-    v,d = s.split('---CONTENT---')
-    self.body.append(v)
-    self._req = d
+    if not node.attributes.get('hidden', False):
+        r = ReSTRenderer( [self.builder.app.env.srcdir, os.path.dirname(__file__)] )
+        s = r.render('req.html.jinja2', node.attributes)
+        v,d = s.split('---CONTENT---')
+        self.body.append(v)
+        self._req = d
 
 def latex_visit_req_node(self: LaTeXTranslator, node: req_node) -> None:
-    r = LaTeXRenderer( [self.builder.app.env.srcdir, os.path.dirname(__file__)] )
-    s = r.render('req.latex.jinja2', node.attributes)
-    v,d = s.split('---CONTENT---')
-    self.body.append(v)
-    self._req = d
+    if not node.attributes.get('hidden', False):
+        r = LaTeXRenderer( [self.builder.app.env.srcdir, os.path.dirname(__file__)] )
+        s = r.render('req.latex.jinja2', node.attributes)
+        v,d = s.split('---CONTENT---')
+        self.body.append(v)
+        self._req = d
 
 
 def depart_req_node(self: LaTeXTranslator, node: req_node) -> None:
-    self.body.append(self._req)
-    self._req = None
+    if not node.attributes.get('hidden', False):
+        self.body.append(self._req)
+        self._req = None
 
 class ReqDirective(SphinxDirective):
     """
@@ -109,6 +123,7 @@ class ReqDirective(SphinxDirective):
         'csv-file': directives.path,
         'filter': directives.unchanged,
         'sort': directives.unchanged,
+        'hidden': boolean,
     }
 
     # XXX define comment separated with | 
@@ -147,11 +162,12 @@ class ReqDirective(SphinxDirective):
 
             node['ids'].append(targetid)
 
-            r = ReSTRenderer( [self.env.srcdir,os.path.dirname(__file__)] )
-            s = r.render('req.rst.jinja2', options)
+            if not options.get('hidden', False):
+                r = ReSTRenderer( [self.env.srcdir,os.path.dirname(__file__)] )
+                s = r.render('req.rst.jinja2', options)
 
-            sub_nodes = self.parse_text_to_nodes(s)
-            node += sub_nodes
+                sub_nodes = self.parse_text_to_nodes(s)
+                node += sub_nodes
 
             self.env.get_domain('req').add_req(node, self.env.docname)
 

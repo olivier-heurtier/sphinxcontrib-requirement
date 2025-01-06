@@ -92,11 +92,12 @@ First we import only the requirements for c1:
     :csv-file: test1.csv
     :filter: contract=='c1'
 
-And then the requirements for c3:
+And then the requirements for c3 (hidden).
 
 .. req:req::
     :csv-file: test1.csv
     :filter: contract=='c3'
+    :hidden: yes
 
 Generating ID
 -------------

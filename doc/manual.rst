@@ -48,7 +48,8 @@ Directives
 
     This directive accepts the following options:
 
-    * ``reqid``: define the requirement id
+    * ``reqid``: define the requirement id. If not provided an ID will be generated using
+      the format specified with the configuration option ``req_idpattern``
     * ``csv-file``: an external csv file (separated with ``,``) giving the requirements
       attributes (such as ``reqid``, ``title``, ``content``, etc.).
       The first line must list the field names.
@@ -58,6 +59,9 @@ Directives
       Example: ``reqid=='0001'``
     * ``sort``: a sorting expression used when importing a CSV.
       Example: ``reqid,-title`` (the character ``-`` is used to reverse the order)
+    * ``hidden``: if evaluating to True (accepted: yes, Yes, true, True, integer not 0)
+      the requirement will not be visible. It will still be visible in the :rst:dir:`req:reqlist`
+      output and in the links.
 
     Other options may be available depending on the :ref:`customization` applied.
 
@@ -117,7 +121,7 @@ req_reference_text
 
 req_idpattern
 
-    A *format* string used when generating a new identifier. This must be a f-string referencing
+    A *format* string used when generating a new identifier. This must be an f-string referencing
     the key ``doc`` and ``serial``. Default: ``REQ-{doc}{serial:03d}``
 
 req_html_css
@@ -137,7 +141,9 @@ req_options
 
     A dictionary of additional attributes that can be defined for the requirements. Those attributes
     will be available as additional Sphinx options to the :rst:dir:`req:req` directive.
-    For example, to add a priority and a subsystem attributes to the requirements, use::
+    For example, to add a priority and a subsystem attributes to the requirements, use:
+
+    .. code-block:: python
 
         req_options = dict(
             priority="directives.positive_int",
@@ -146,8 +152,10 @@ req_options
 
     The added attributes must be defined with a string that will be evaluated in the scope of the requirement module.
 
-    It is also possible to add a new attribute using Python code::
+    It is also possible to add a new attribute using Python code:
   
+    .. code-block:: python
+
         from docutils.parsers.rst import directives
         from sphinxcontrib.requirement import req
         def yesno(argument):
@@ -166,7 +174,9 @@ req_links
 
     Each link will then be available as a pseudo field of the requirement built from the link name.
 
-    For example, to define a parent/child relationship between the requirements, use::
+    For example, to define a parent/child relationship between the requirements, use:
+
+    .. code-block:: python
 
         req_links = {
             "parents":"children",
