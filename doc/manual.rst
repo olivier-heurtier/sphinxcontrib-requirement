@@ -59,7 +59,7 @@ Directives
       Example: ``reqid=='0001'``
     * ``sort``: a sorting expression used when importing a CSV.
       Example: ``reqid,-title`` (the character ``-`` is used to reverse the order)
-    * ``hidden``: if evaluating to True (accepted: yes, Yes, true, True, integer not 0)
+    * ``hidden``: if set (with no value)
       the requirement will not be visible. It will still be visible in the :rst:dir:`req:reqlist`
       output and in the links.
 
@@ -79,7 +79,12 @@ Directives
     * ``fields``: specify the fields to be included in the table.
       Default: ``reqid, title``
     * ``headers``: specify the column headers.
-      Default: ``ID, Title``
+      Default is to use the field names.
+    * ``hidden``: if set (with no value)
+      the list will not be visible.
+    * ``csv-file``: an external csv filename, relative to the file containing this directive, where the list
+      of requirements will be exported. Only the fields listed in ``fields`` will be included. If ``headers``
+      is specified, it will be used for the first line of the CSV
 
     The default rendering is using ``list-table`` and all its options can be used
     (``width``, ``widths``, ``align``, ``header-rows``, ``stub-columns``).
@@ -89,7 +94,7 @@ Directives
 
     Example: to just have a plain list of requirement IDs, use as content of this directive::
 
-        {%for req in reqs%}{{req['reqid']}}, {%endfor%}
+        {{reqs|join(', ', attribute='reqid')}}
 
 
 Roles

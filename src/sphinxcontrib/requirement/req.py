@@ -42,10 +42,9 @@ from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
 
 # XXX HTML: links local to the page behave differently
+# XXX PDF: in reqlist tables, lines take sometimes two lines in height (due to links or absence of value for links?)
 # XXX support label (when IDs are unknown)
-# XXX dump a reqlist in a CSV
 # XXX When a custo req.css is defined, extend the default req.css, do not replace it all
-# XXX filter with direct access to attributes
 # XXX default req.rst.jinja2 with an env for comment
 
 _DEBUG = False
@@ -90,7 +89,7 @@ class req_node(nodes.Element):
     pass
 
 def html_visit_req_node(self: HTML5Translator, node: req_node) -> None:
-    if not node.attributes.get('hidden', False):
+    if not 'hidden' in node.attributes:
         r = ReSTRenderer( [self.builder.app.env.srcdir, os.path.dirname(__file__)] )
         s = r.render('req.html.jinja2', node.attributes)
         v,d = s.split('---CONTENT---')
@@ -98,7 +97,7 @@ def html_visit_req_node(self: HTML5Translator, node: req_node) -> None:
         self._req = d
 
 def latex_visit_req_node(self: LaTeXTranslator, node: req_node) -> None:
-    if not node.attributes.get('hidden', False):
+    if not 'hidden' in node.attributes:
         r = LaTeXRenderer( [self.builder.app.env.srcdir, os.path.dirname(__file__)] )
         s = r.render('req.latex.jinja2', node.attributes)
         v,d = s.split('---CONTENT---')
@@ -107,7 +106,7 @@ def latex_visit_req_node(self: LaTeXTranslator, node: req_node) -> None:
 
 
 def depart_req_node(self: LaTeXTranslator, node: req_node) -> None:
-    if not node.attributes.get('hidden', False):
+    if not 'hidden' in node.attributes:
         self.body.append(self._req)
         self._req = None
 
@@ -125,10 +124,9 @@ class ReqDirective(SphinxDirective):
         'csv-file': directives.path,
         'filter': directives.unchanged,
         'sort': directives.unchanged,
-        'hidden': boolean,
+        'hidden': directives.flag,
     }
 
-    # XXX define comment separated with | 
     # Transform the directive into a list of docutils nodes
     def run(self):
         # For development
@@ -164,7 +162,7 @@ class ReqDirective(SphinxDirective):
 
             node['ids'].append(targetid)
 
-            if not options.get('hidden', False):
+            if not 'hidden' in options:
                 r = ReSTRenderer( [self.env.srcdir,os.path.dirname(__file__)] )
                 s = r.render('req.rst.jinja2', options)
 
@@ -283,10 +281,7 @@ def _filter_and_sort(reqs :list[req_node], filter :str=None, sort :str=None) -> 
     return reqs
 
 class reqlist_node(nodes.Element):
-    def fill(self, dom, app, doctree, fromdocname):
-        if _DEBUG:
-            print('----- fill ----- ' + fromdocname)
-
+    def get_list(self, dom):
         # Get the list of all requirements
         reqs = []
         for data in dom.data['reqs']:
@@ -294,53 +289,81 @@ class reqlist_node(nodes.Element):
 
         # filter and sort
         reqs = _filter_and_sort(reqs, self['filter'], self['sort'])
+        return reqs
+
+    def fill(self, dom, app, doctree, fromdocname):
+        if _DEBUG:
+            print('----- fill ----- ' + fromdocname)
+
+        # Get the list of all requirements
+        reqs = self.get_list(dom)
 
         # evaluate the content
-        r = ReSTRenderer( [app.srcdir, os.path.dirname(__file__)] )
-        kwargs = dict(
-            reqs=reqs,
-            caption=self['caption'],
-            align=self['align'],
-            width=self['width'],
-            widths=self['widths'],
-            header_rows=self['header-rows'],
-            stub_columns=self['stub-columns'],
-            fields=self['fields'],
-            headers=self['headers'],
-        )
-        if self['content']:
-            s = r.render_string(self['content'], kwargs)
-        else:
-            s = r.render('reqlist.rst.jinja2', kwargs)
+        if not 'hidden' in self.attributes:
+            r = ReSTRenderer( [app.srcdir, os.path.dirname(__file__)] )
+            kwargs = dict(
+                reqs=reqs,
+                caption=self['caption'],
+                align=self['align'],
+                width=self['width'],
+                widths=self['widths'],
+                header_rows=self['header-rows'],
+                stub_columns=self['stub-columns'],
+                fields=self['fields'],
+                headers=self['headers'],
+            )
+            if self['content']:
+                s = r.render_string(self['content'], kwargs)
+            else:
+                s = r.render('reqlist.rst.jinja2', kwargs)
 
-        # parse the resulting string (from sphinx.builders.Builder.read_doc)
-        # with the directives and roles active
-        app.builder.env.prepare_settings('reqlist.rst')
-        publisher = app.registry.get_publisher(app, 'restructuredtext')
-        publisher.settings.record_dependencies = DependencyList()
-        with sphinx_domains(app.env), rst.default_role('reqlist.rst', app.config.default_role):
-            publisher.set_source(source=io.StringIO(s), source_path='reqlist.rst')
-            publisher.publish()
-            document = publisher.document
+            # parse the resulting string (from sphinx.builders.Builder.read_doc)
+            # with the directives and roles active
+            app.builder.env.prepare_settings('reqlist.rst')
+            publisher = app.registry.get_publisher(app, 'restructuredtext')
+            publisher.settings.record_dependencies = DependencyList()
+            with sphinx_domains(app.env), rst.default_role('reqlist.rst', app.config.default_role):
+                publisher.set_source(source=io.StringIO(s), source_path='reqlist.rst')
+                publisher.publish()
+                document = publisher.document
 
-        # fix docname in all nodes of the document
-        # fix also the corresponding data in env
-        for node in document.traverse(ReqReference):
-            node['refdoc'] = fromdocname
+            # fix docname in all nodes of the document
+            # fix also the corresponding data in env
+            for node in document.traverse(ReqReference):
+                node['refdoc'] = fromdocname
 
-        # fix any ids that could be duplicated due to a local env
-        # for now, only with table
-        for node in document.traverse(nodes.table):
-            if 'ids' in node and node['ids'] and node['ids'][0].startswith('id'):
-                node['ids'] = ['reqlist%d'  % app.env.new_serialno('reqlist')]
+            # fix any ids that could be duplicated due to a local env
+            # for now, only with table
+            for node in document.traverse(nodes.table):
+                if 'ids' in node and node['ids'] and node['ids'][0].startswith('id'):
+                    node['ids'] = ['reqlist%d'  % app.env.new_serialno('reqlist')]
 
-        self += document.children
+            self += document.children
 
 
 def visit_reqlist_node(self, node: reqlist_node) -> None:
-    return
+    if 'csv-file' in node.attributes:
+        dom = self.builder.env.get_domain('req')
+        # Get the list of all requirements
+        reqs = node.get_list(dom)
 
-def depart_reqlist_node(self: LaTeXTranslator, node: reqlist_node) -> None:
+        # dump in a CSV
+        fn = node['csv-file']
+        fn = os.path.join(self.builder.outdir, fn)
+        print(fn)
+        dirname = os.path.dirname(fn)
+        if dirname:
+            os.makedirs(dirname, exist_ok=True)
+        with open(fn, 'wt') as csvfile:
+            wr = csv.writer(csvfile, delimiter=',')
+            if 'headers' in node.attributes:
+                wr.writerow(node['headers'])
+            else:
+                wr.writerow(node['fields'])
+            for r in reqs:
+                wr.writerow([r.get(x, '') for x in node['fields']])
+
+def depart_reqlist_node(self, node: reqlist_node) -> None:
     return
 
 class ReqListDirective(SphinxDirective):
@@ -355,6 +378,8 @@ class ReqListDirective(SphinxDirective):
     option_spec = {
         'filter': directives.unchanged,
         'sort': directives.unchanged,
+        'csv-file': directives.path,
+        'hidden': directives.flag,
         'headers': directives.unchanged,
         'fields': directives.unchanged,
         'align': directives.unchanged,
@@ -379,8 +404,15 @@ class ReqListDirective(SphinxDirective):
 
         node['filter'] = self.options.get('filter',None)
         node['sort'] = self.options.get('sort',None)
-        node['headers'] = [x.strip() for x in self.options.get('headers','ID, Title').split(',')]
+        if 'csv-file' in self.options:
+            node['csv-file'], dummy = self.env.relfn2path(self.options['csv-file'])
+        if 'hidden' in self.options:
+            node['hidden'] = None
         node['fields'] = [x.strip() for x in self.options.get('fields','reqid, title').split(',')]
+        if 'headers' in self.options:
+            node['headers'] = [x.strip() for x in self.options['headers'].split(',')]
+        else:
+            node['headers'] = node['fields']
         caption = ''
         if self.arguments:
             caption = self.arguments[0]
@@ -495,7 +527,6 @@ def doctree_read(app, doctree):
     app.env.note_dependency(os.path.join(app.env.srcdir, 'req.html.jinja2'))
     app.env.note_dependency(os.path.join(app.env.srcdir, 'req.latex.jinja2'))
 
-import pprint
 #______________________________________________________________________________
 def env_updated(app, env):
     if _DEBUG:

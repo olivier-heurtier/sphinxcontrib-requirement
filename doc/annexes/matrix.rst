@@ -8,10 +8,12 @@ This chapter demonstrates some usage of :rst:dir:`req:reqlist` with customized c
 
 .. req:reqlist:: Tracability
     :sort: reqid
+    :fields: reqid, title, parents, children
+    :csv-file: tracability.csv
 
 
     .. list-table:: {{caption}}
-        :widths: 10 60 20 20
+        :widths: 20 50 20 20
 
         * - ID
           - Title
@@ -30,7 +32,7 @@ This chapter demonstrates some usage of :rst:dir:`req:reqlist` with customized c
 
 
     .. list-table:: {{caption}}
-        :widths: 10 60 20 20
+        :widths: 20 50 20 20
 
         * - ID
           - Title
@@ -45,4 +47,19 @@ This chapter demonstrates some usage of :rst:dir:`req:reqlist` with customized c
     {%endfor%}
 
 
+.. only:: html
+
+    All priority 2 requirements are in `CSV file <prio2.csv>`_
+
+.. raw:: latex
+
+    All priority 2 requirements are in 
+    \textattachfile[]{annexes/prio2.csv}{CSV file}
+
+.. req:reqlist::
+    :filter: priority==2
+    :hidden:
+    :csv-file: prio2.csv
+    :fields: reqid, title, content, priority, contract
+    :headers: ID, Title, Content, Priority number, Contract number
 

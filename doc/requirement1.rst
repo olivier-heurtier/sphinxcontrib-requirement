@@ -97,7 +97,7 @@ And then the requirements for c3 (hidden).
 .. req:req::
     :csv-file: test1.csv
     :filter: contract=='c3'
-    :hidden: yes
+    :hidden:
 
 Generating ID
 -------------

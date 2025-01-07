@@ -77,7 +77,7 @@ This is still the list of all the requirements but with a customized list of col
 .. req:reqlist:: This is a *list* produced using **all** options (no filtering, no sorting)
     :fields: reqid, title, priority, _parents
     :headers: ID, Title, Priority, Parents
-    :widths: 20 70 10 20
+    :widths: 20 40 20 30
     :width: 80%
     :align: right
     :header-rows: 0
@@ -98,6 +98,20 @@ listing all priority 1 requirements:
 
     {{reqs|join(', ', attribute='reqid')}}
 
+.. only:: html
+
+    The same list can be hidden and exported to a `CSV file <prio1.csv>`_
+
+.. raw:: latex
+
+    The same list can be hidden and exported to a
+    \textattachfile[]{prio1.csv}{CSV file}
+
+.. req:reqlist::
+    :filter: priority==1
+    :hidden:
+    :csv-file: prio1.csv
+
 
 This directive accepts a content to better customize the rendering.
 
@@ -106,7 +120,7 @@ This directive accepts a content to better customize the rendering.
 
 
     .. list-table:: {{caption}}
-        :widths: 10 70 10 20
+        :widths: 20 50 20 20
 
         * - ID
           - Description

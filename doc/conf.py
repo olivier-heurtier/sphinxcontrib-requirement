@@ -3,7 +3,6 @@ project = 'requirement'
 version = '1.0'
 author = 'Olivier Heurtier'
 
-#source_suffix = '.rst'
 master_doc = 'index'
 exclude_patterns = []
 
@@ -11,6 +10,7 @@ extensions = ['sphinxcontrib.requirement']
 
 latex_elements = {
 'extraclassoptions': 'openany,oneside',
+'preamble':r'\usepackage{attachfile}',
 'atendofbody': r'''
   \listoftables
   \listoffigures
