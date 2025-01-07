@@ -1,0 +1,5 @@
+[run]
+source=sphinxcontrib.requirement
+omit = tests/*
+    doc/*
+

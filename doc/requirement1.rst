@@ -67,6 +67,8 @@ See :req:req:`REQ-0004`
     :reqid: REQ-0003
     :priority: 1
     :children: REQ-0004
+    :sort: reqid
+    :filter: contract=='c1'
 
     This is a requirement with usage of the reversed link (children) and with a comment
 
@@ -90,6 +92,7 @@ First we import only the requirements for c1:
 
 .. req:req::
     :csv-file: test1.csv
+    :sort: reqid
     :filter: contract=='c1'
 
 And then the requirements for c3 (hidden).

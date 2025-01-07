@@ -46,6 +46,7 @@ from sphinx.writers.latex import LaTeXTranslator
 # XXX support label (when IDs are unknown)
 # XXX When a custo req.css is defined, extend the default req.css, do not replace it all
 # XXX default req.rst.jinja2 with an env for comment
+# XXX evaluate to text the rst of the content to better integrate in a CSV
 
 _DEBUG = False
 
