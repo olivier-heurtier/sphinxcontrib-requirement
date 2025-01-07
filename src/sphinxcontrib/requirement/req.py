@@ -49,17 +49,6 @@ from sphinx.writers.latex import LaTeXTranslator
 
 _DEBUG = False
 
-def boolean(argument):
-    if argument.lower() in ['yes','true']:
-        return True
-    if argument.lower() in ['no','false']:
-        return False
-    if type(argument) is int:
-        if argument:
-            return True
-        return False
-    raise ValueError('must evaluate to a boolean')
-
 # typing of directive option to define links (list of IDs)
 def link(argument):
     if not argument.strip():
