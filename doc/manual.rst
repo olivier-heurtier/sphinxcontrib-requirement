@@ -77,7 +77,9 @@ Directives
     * ``sort``: a sorting expression used on the filtered list.
       Example: ``reqid,-title`` (the character ``-`` is used to reverse the order)
     * ``fields``: specify the fields to be included in the table.
-      Default: ``reqid, title``
+      Default: ``reqid, title``. Available fields include ``reqid``, ``title`` and ``content`` as well as any
+      customized properties. In addition, ``text_title`` and ``text_content`` are made available
+      when exporting to CSV: they are cleaner version of title and content.
     * ``headers``: specify the column headers.
       Default is to use the field names.
     * ``hidden``: if set (with no value)

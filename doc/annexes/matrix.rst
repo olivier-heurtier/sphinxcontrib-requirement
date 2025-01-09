@@ -9,7 +9,6 @@ This chapter demonstrates some usage of :rst:dir:`req:reqlist` with customized c
 .. req:reqlist:: Tracability
     :sort: reqid
     :fields: reqid, title, parents, children
-    :csv-file: tracability.csv
 
 
     .. list-table:: {{caption}}
@@ -26,6 +25,13 @@ This chapter demonstrates some usage of :rst:dir:`req:reqlist` with customized c
           - {{req['_parents']}}
           - {{req['_children']}}
     {%endfor%}
+
+.. req:reqlist::
+    :hidden:
+    :sort: reqid
+    :fields: reqid, text_title, text_content, parents, children
+    :csv-file: tracability.csv
+
 
 .. req:reqlist:: Tree Structure
     :sort: reqid
@@ -60,6 +66,6 @@ This chapter demonstrates some usage of :rst:dir:`req:reqlist` with customized c
     :filter: priority==2
     :hidden:
     :csv-file: prio2.csv
-    :fields: reqid, title, content, priority, contract
+    :fields: reqid, text_title, text_content, priority, contract
     :headers: ID, Title, Content, Priority number, Contract number
 

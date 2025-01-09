@@ -27,12 +27,15 @@ import textwrap
 
 from docutils import nodes
 from docutils.parsers.rst import directives
+from docutils.utils import DependencyList
+from docutils.io import StringOutput
+from docutils.transforms.references import Substitutions
+
 from sphinx.domains import Domain
 from sphinx.roles import XRefRole
 from sphinx.util.docutils import SphinxDirective, SphinxRole
-from sphinx.util.template import ReSTRenderer, LaTeXRenderer
+from sphinx.util.template import SphinxRenderer, ReSTRenderer, LaTeXRenderer
 from sphinx.util.docutils import sphinx_domains
-from docutils.utils import DependencyList
 from sphinx.util import rst
 from sphinx.errors import SphinxError
 
@@ -40,13 +43,14 @@ from sphinx.application import Sphinx
 from sphinx.util.typing import ExtensionMetadata
 from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
+from sphinx.writers.text import TextWriter
+from sphinx.builders.text import TextBuilder
 
 # XXX HTML: links local to the page behave differently
 # XXX PDF: in reqlist tables, lines take sometimes two lines in height (due to links or absence of value for links?)
 # XXX support label (when IDs are unknown)
 # XXX When a custo req.css is defined, extend the default req.css, do not replace it all
 # XXX default req.rst.jinja2 with an env for comment
-# XXX evaluate to text the rst of the content to better integrate in a CSV
 
 _DEBUG = False
 
@@ -80,7 +84,7 @@ class req_node(nodes.Element):
 
 def html_visit_req_node(self: HTML5Translator, node: req_node) -> None:
     if not 'hidden' in node.attributes:
-        r = ReSTRenderer( [self.builder.app.env.srcdir, os.path.dirname(__file__)] )
+        r = SphinxRenderer( [self.builder.app.env.srcdir, os.path.dirname(__file__)] )
         s = r.render('req.html.jinja2', node.attributes)
         v,d = s.split('---CONTENT---')
         self.body.append(v)
@@ -151,6 +155,19 @@ class ReqDirective(SphinxDirective):
             node += targetnode
 
             node['ids'].append(targetid)
+
+            def _get_text(s):
+                builder = TextBuilder(self.env.app, self.env)
+                writer = TextWriter(builder)
+                destination = StringOutput(encoding='utf-8')
+                doc = nodes.document(self.state.document.settings, self.state.document.reporter )
+                doc.substitution_defs = self.state.document.substitution_defs
+                doc += self.parse_text_to_nodes(s)
+                Substitutions(doc).apply()
+                writer.write(doc, destination)
+                return writer.output
+            node['text_content'] = _get_text(node['content'])
+            node['text_title'] = _get_text(node['title'])
 
             if not 'hidden' in options:
                 r = ReSTRenderer( [self.env.srcdir,os.path.dirname(__file__)] )

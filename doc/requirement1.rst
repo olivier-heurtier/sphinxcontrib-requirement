@@ -30,6 +30,15 @@ Link in another rst file :req:req:`REQ-0202`
 
 Backward link to :req:req:`REQ-0101`.
 
+.. req:req:: This is a requirement with a very strange ID: ID<23&4,>
+    :reqid: ID<23&4,>
+
+    This is a requirement with a very strange ID: ID<23&4,>
+
+.. req:req:: This is a requirement of |product| with a substitution
+
+    This is a requirement of |product| with a substitution
+
 Customization Examples
 ----------------------
 

@@ -38,3 +38,11 @@ req_links = {
 }
 
 req_idpattern = 'GEN-{doc}{serial:03d}'
+
+# test if substitution are correctly applied everywhere (title, content, export in CSV)
+rst_prolog = """
+
+.. |product| replace:: sphinxcontrib-requirement
+
+
+"""
