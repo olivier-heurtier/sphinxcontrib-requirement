@@ -1,14 +1,34 @@
 % https://mirror.ibcp.fr/pub/CTAN/macros/latex/contrib/mdframed/mdframed.pdf
-% https://www.overleaf.com/learn/latex/Margin_notes
-% https://ctan.tetaneutral.net/macros/latex/contrib/marginnote/marginnote.pdf
 \usepackage[framemethod=TikZ]{mdframed}
 \usepackage{bbding}
 \usepackage{pifont}
+% https://ctan.tetaneutral.net/macros/latex/contrib/marginnote/marginnote.pdf
 \usepackage{marginnote}
 
 \DeclareUnicodeCharacter{2750}{\SquareShadowTopRight}
 
+% env for the whole requirement block and for the content (the 2 container directives used in req.rst.jinja2)
+% https://tex.stackexchange.com/questions/666826/why-is-my-environment-not-taking-the-style-i-specify
 \definecolor{reqbg}{rgb}{0.98,0.98,0.98}
+\newmdenv[skipabove=3,linewidth=0pt,backgroundcolor=reqbg,innerleftmargin=0pt,innerrightmargin=0pt]{sphinxclassreq}
+\newmdenv[]{sphinxclasscontent}
+% some versions of Sphinx do not add the sphinxclass
 \newmdenv[skipabove=3,linewidth=0pt,backgroundcolor=reqbg,innerleftmargin=0pt,innerrightmargin=0pt]{req}
+\newmdenv[]{content}
 
+% make the margins with small font
+% https://www.overleaf.com/learn/latex/Margin_notes
+% https://en.wikibooks.org/wiki/LaTeX/Footnotes_and_Margin_Notes
 \renewcommand*{\marginfont}{\scriptsize\sffamily}
+
+% styling of reqid (in the margin)
+\newcommand{\DUrolereqid}[1]{
+  \reversemarginpar
+  \marginnote[#1]{#1}%
+  \normalmarginpar
+}
+
+% styling of the title (bold text)
+\newcommand{\DUroletitle}[1]{
+  \textbf{#1}%
+}

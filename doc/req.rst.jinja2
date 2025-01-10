@@ -1,22 +1,28 @@
 
-{{content|indent(0)}}
+.. container:: req
 
-.. container:: comment
+    :title:`{{text_title}}` :reqid:`{{reqid}}`
 
-    *Comment:*
+    .. container:: content
 
-    {{comment|default('')|indent(4)}}
+        {{content|indent(8)}}
 
-Priority: *{{priority|default('-')}}*
+    .. container:: comment
 
-.. list-table:: Links for {{reqid}}
-    :widths: 50 50
-    :width: 100
+        *Comment:*
 
-    * - Parents: {{_parents}}
-      - Children: {{_children}}
+        {{comment|default('')|indent(8)}}
 
-    * - Branches: {{_branches}}
-      - Leaves: {{_leaves}}
+    Priority: *{{priority|default('-')}}*
 
-This requirement is referenced there: :req:ref:`{{reqid}}`
+    .. list-table:: Links for {{reqid}}
+        :widths: 50 50
+        :width: 100
+
+        * - Parents: {{_parents}}
+          - Children: {{_children}}
+
+        * - Branches: {{_branches}}
+          - Leaves: {{_leaves}}
+
+    This requirement is referenced there: :req:ref:`{{reqid}}`

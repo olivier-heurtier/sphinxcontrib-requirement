@@ -43,14 +43,12 @@ from sphinx.application import Sphinx
 from sphinx.util.typing import ExtensionMetadata
 from sphinx.writers.html5 import HTML5Translator
 from sphinx.writers.latex import LaTeXTranslator
-from sphinx.writers.text import TextWriter
+from sphinx.writers import text
 from sphinx.builders.text import TextBuilder
 
 # XXX HTML: links local to the page behave differently
 # XXX PDF: in reqlist tables, lines take sometimes two lines in height (due to links or absence of value for links?)
 # XXX support label (when IDs are unknown)
-# XXX When a custo req.css is defined, extend the default req.css, do not replace it all
-# XXX default req.rst.jinja2 with an env for comment
 
 _DEBUG = False
 
@@ -156,18 +154,26 @@ class ReqDirective(SphinxDirective):
 
             node['ids'].append(targetid)
 
+            def my_wrap(text, width = 80, **kwargs):
+                return text.splitlines()
+
             def _get_text(s):
                 builder = TextBuilder(self.env.app, self.env)
-                writer = TextWriter(builder)
+                # do not wrap the lines (for long title)
+                owrap = text.my_wrap
+                text.my_wrap = my_wrap
+                writer = text.TextWriter(builder)
                 destination = StringOutput(encoding='utf-8')
                 doc = nodes.document(self.state.document.settings, self.state.document.reporter )
                 doc.substitution_defs = self.state.document.substitution_defs
                 doc += self.parse_text_to_nodes(s)
                 Substitutions(doc).apply()
                 writer.write(doc, destination)
-                return writer.output
-            node['text_content'] = _get_text(node['content'])
-            node['text_title'] = _get_text(node['title'])
+                # restore previous wrap function
+                text.my_wrap = owrap
+                return writer.output.strip()
+            options['text_content'] = node['text_content'] = _get_text(node['content'])
+            options['text_title'] = node['text_title'] = _get_text(node['title'])
 
             if not 'hidden' in options:
                 r = ReSTRenderer( [self.env.srcdir,os.path.dirname(__file__)] )
@@ -715,18 +721,29 @@ def doctree_resolved(app, doctree, fromdocname):
 def config_inited(app, config):
     if _DEBUG:
         print('----------------config_inited-----------------------')
+
+    # Define roles & HTML styles
     if not config.rst_prolog:
         config.rst_prolog = ''
-    config.rst_prolog += '''
+    config.rst_prolog = '''
+
+.. role:: reqid
+
+.. role:: title
+
 .. raw:: html
 
     <style>
     ''' + textwrap.indent(config.req_html_css, '        ') + '''
     </style>
-    '''
-    config.latex_elements.setdefault('preamble', '')
-    config.latex_elements['preamble'] += config.req_latex_preamble
+    ''' + config.rst_prolog
 
+    # Define LaTeX preamble for envs and styles
+    config.latex_elements.setdefault('preamble', '')
+    # Give the opportunity to the config preamble to redefine commands or envs
+    config.latex_elements['preamble'] = config.req_latex_preamble + config.latex_elements['preamble']
+
+    # Apply customized options & links
     for k,v in config.req_options.items():
         ReqDirective.option_spec[k] = eval(v)
 

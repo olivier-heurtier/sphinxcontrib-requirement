@@ -39,6 +39,10 @@ Backward link to :req:req:`REQ-0101`.
 
     This is a requirement of |product| with a substitution
 
+.. req:req:: This is a requirement with a very very very very very very very very very very very very very very very very very very very very very very very very very very very long title
+
+    This is a requirement with a very long title
+
 Customization Examples
 ----------------------
 

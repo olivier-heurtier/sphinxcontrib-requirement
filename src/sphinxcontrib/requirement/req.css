@@ -1,15 +1,15 @@
-
 .req {
     background-color: #FAFAFA;
+    position: relative;
 }
 
-.req .reqid p {
-    margin-bottom:-2em ;
-    text-align: right;
-    margin-right: -10em;
-    font-size: 70%;
-}
-
-.req .title p {
+.req p .title {
     font-weight:bold;
+}
+
+.req p .reqid {
+    position: absolute;
+    left: 100%;
+    display: inline;
+    font-size: 70%;
 }

@@ -8,17 +8,47 @@ exclude_patterns = []
 
 extensions = ['sphinxcontrib.requirement']
 
+# test if substitution are correctly applied everywhere (title, content, export in CSV)
+# style the comment
+rst_prolog = """
+
+.. |product| replace:: sphinxcontrib-requirement
+
+.. raw:: html
+
+    <style>
+
+        .comment {
+            margin-left: 30px;
+            margin-right: 20px;
+            margin-bottom: 10px;
+            padding: 5px;
+            background-color: #F4F4F4;
+            border-style: solid;
+            border-radius: 5px;
+            border-width: 1px;
+            border-color: black;
+        }
+    </style>
+
+"""
+
 latex_elements = {
 'extraclassoptions': 'openany,oneside',
-'preamble':r'\usepackage{attachfile}',
+'preamble':r'''
+\usepackage{attachfile}
+\usepackage[framemethod=TikZ]{mdframed}
+
+% custo styling of the comment
+\definecolor{commentbg}{rgb}{0.9,0.9,0.9}
+\newmdenv[roundcorner=5pt,leftmargin=5,rightmargin=10,backgroundcolor=commentbg]{sphinxclasscomment}
+
+''',
 'atendofbody': r'''
   \listoftables
   \listoffigures
  '''
 }
-
-# https://tex.stackexchange.com/questions/666826/why-is-my-environment-not-taking-the-style-i-specify
-# https://en.wikibooks.org/wiki/LaTeX/Footnotes_and_Margin_Notes
 
 req_options = dict(
     contract="lambda argument: directives.choice(argument, ('c1', 'c3'))",
@@ -38,11 +68,3 @@ req_links = {
 }
 
 req_idpattern = 'GEN-{doc}{serial:03d}'
-
-# test if substitution are correctly applied everywhere (title, content, export in CSV)
-rst_prolog = """
-
-.. |product| replace:: sphinxcontrib-requirement
-
-
-"""
