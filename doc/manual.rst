@@ -123,7 +123,7 @@ Configuration File Options
 
 req_reference_text
 
-    The string (at least one character) inserted in the text when using the role `req:ref`.
+    The string (at least one character) inserted in the text when using the role :rst:role:`req:ref`.
     Default is Unicode character 2750.
 
 req_idpattern

@@ -50,6 +50,7 @@ from sphinx.builders.text import TextBuilder
 # XXX PDF: in reqlist tables, lines take sometimes two lines in height (due to links or absence of value for links?)
 #       inline with empty text leads to an extra line (\sphinxAtStartPar). See line 595
 # XXX support label (when IDs are unknown)
+# XXX define Jinja macros in jinja2 files.
 
 _DEBUG = False
 
