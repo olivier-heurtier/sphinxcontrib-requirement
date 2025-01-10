@@ -48,6 +48,7 @@ from sphinx.builders.text import TextBuilder
 
 # XXX HTML: links local to the page behave differently
 # XXX PDF: in reqlist tables, lines take sometimes two lines in height (due to links or absence of value for links?)
+#       inline with empty text leads to an extra line (\sphinxAtStartPar). See line 595
 # XXX support label (when IDs are unknown)
 
 _DEBUG = False
@@ -591,17 +592,13 @@ def env_updated(app, env):
             print('Removing req_links_node from ' + docname)
         for node in doctree.traverse(req_links_node):
             # get the req from the domain data
-            p  = nodes.inline()
+            p  = nodes.inline(text='')
             match = [req
                 for name, req, typ, docname, anchor, prio in dom.data['reqs']
                 if req['reqid']==node['reqid']
             ]
             if match and match[0].get(node['link']):
                 # build a list of ReqReference
-                nl = []
-                for x in match[0].get(node['link']):
-                    reqref = ReqReference(x, )
-
                 for r in match[0].get(node['link']):
                     n = ReqReference('', '', internal=True)
                     reqrefs_just_added.add(n)
