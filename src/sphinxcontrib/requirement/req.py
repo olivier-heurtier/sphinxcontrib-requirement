@@ -47,8 +47,6 @@ from sphinx.writers import text
 from sphinx.builders.text import TextBuilder
 
 # XXX HTML: links local to the page behave differently
-# XXX PDF: in reqlist tables, lines take sometimes two lines in height (due to links or absence of value for links?)
-#       inline with empty text leads to an extra line (\sphinxAtStartPar). See line 617
 # XXX define Jinja macros in jinja2 files.
 # XXX text used in reference (reqid for now but could be reqid + title). Define a template as a f-string
 
@@ -636,6 +634,8 @@ def env_updated(app, env):
                     p += nodes.inline(text=', ')
                 if p.children:
                     p.pop()
+            if not p.children:
+                p  = nodes.inline(text='\u202F')
             node.replace_self(p)
 
     # Do not use label in ReqReference, replace with reqid
