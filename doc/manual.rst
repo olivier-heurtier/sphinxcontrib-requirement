@@ -129,6 +129,10 @@ req_reference_text
     The string (at least one character) inserted in the text when using the role :rst:role:`req:ref`.
     Default is Unicode character 2750.
 
+req_reference_pattern
+
+    The pattern of the text used in the reference. Default is to use the reqid.
+    
 req_idpattern
 
     A *format* string used when generating a new identifier. This must be an f-string referencing

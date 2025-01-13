@@ -68,3 +68,4 @@ req_links = {
 }
 
 req_idpattern = 'GEN-{doc}{serial:03d}'
+req_reference_pattern = '{reqid}-{text_title}'

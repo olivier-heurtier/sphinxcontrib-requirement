@@ -48,7 +48,6 @@ from sphinx.builders.text import TextBuilder
 
 # XXX HTML: links local to the page behave differently
 # XXX define Jinja macros in jinja2 files.
-# XXX text used in reference (reqid for now but could be reqid + title). Define a template as a f-string
 
 _DEBUG = False
 
@@ -653,6 +652,22 @@ def env_updated(app, env):
                 if node.children:
                     node.children[0].children[0] = nodes.Text(match[0][2]['reqid'])
 
+    # Apply pattern for text of reference
+    for docname in env.all_docs.keys():
+        doctree = env._write_doc_doctree_cache[docname]
+        for node in doctree.traverse(ReqReference):
+            # get the target req from the domain data
+            match = [
+                (docname, anchor, req)
+                for name, req, typ, docname, anchor, prio in dom.data['reqs']
+                if req['reqid'] == node['reftarget']
+            ]
+            if len(match) > 0:
+                req = match[0][2]
+                if node.children:
+                    s = app.config.req_reference_pattern.format(**req.attributes)
+                    node.children[0].children[0] = nodes.Text(s)
+
     # Do not use label in ReqRefReference
     for docname in env.all_docs.keys():
         doctree = env._write_doc_doctree_cache[docname]
@@ -819,6 +834,7 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     app.add_config_value('req_options', {}, 'env', [dict]) # Additional options/fields that can be defined on requirements
     app.add_config_value('req_links', {}, 'env', [dict]) # Additional links between requirements
     app.add_config_value('req_idpattern', 'REQ-{doc}{serial:03d}', 'env', [str]) # Additional options/fields that can be defined on requirements
+    app.add_config_value('req_reference_pattern', '{reqid}', 'env', [str]) # patter of text inserted when a reference is
 
     app.connect('config-inited', config_inited)
     app.connect('doctree-read', doctree_read)
