@@ -48,8 +48,9 @@ from sphinx.builders.text import TextBuilder
 
 # XXX HTML: links local to the page behave differently
 # XXX PDF: in reqlist tables, lines take sometimes two lines in height (due to links or absence of value for links?)
-#       inline with empty text leads to an extra line (\sphinxAtStartPar). See line 595
+#       inline with empty text leads to an extra line (\sphinxAtStartPar). See line 617
 # XXX define Jinja macros in jinja2 files.
+# XXX text used in reference (reqid for now but could be reqid + title). Define a template as a f-string
 
 _DEBUG = False
 
@@ -365,7 +366,6 @@ def visit_reqlist_node(self, node: reqlist_node) -> None:
         # dump in a CSV
         fn = node['csv-file']
         fn = os.path.join(self.builder.outdir, fn)
-        print(fn)
         dirname = os.path.dirname(fn)
         if dirname:
             os.makedirs(dirname, exist_ok=True)
@@ -597,7 +597,7 @@ def env_updated(app, env):
                     if x in labels:
                         x = labels[x]
                     links.setdefault(x, dict()).setdefault(link_name[l], set()).add( node['reqid'] )
-                links.setdefault(node['reqid'], dict()).setdefault(l, set()).update( node.get(l, () ) )
+                links.setdefault(node['reqid'], dict()).setdefault(l, set()).update( [labels.get(x, x) for x in node.get(l, () )] )
     # apply
     for docname in env.all_docs.keys():
         doctree = env._write_doc_doctree_cache[docname]
