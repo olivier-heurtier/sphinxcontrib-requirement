@@ -43,9 +43,15 @@ Generating ID
 -------------
 
 .. req:req:: Generation 2
+    :label: GEN2
+    :children: GEN1
 
     This is a second test of ID generation
 
+This requirement is referenced there: :req:ref:`GEN2`
+
+See also :req:req:`GEN1`
+ 
 Table
 =====
 

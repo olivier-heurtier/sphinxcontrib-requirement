@@ -49,7 +49,6 @@ from sphinx.builders.text import TextBuilder
 # XXX HTML: links local to the page behave differently
 # XXX PDF: in reqlist tables, lines take sometimes two lines in height (due to links or absence of value for links?)
 #       inline with empty text leads to an extra line (\sphinxAtStartPar). See line 595
-# XXX support label (when IDs are unknown)
 # XXX define Jinja macros in jinja2 files.
 
 _DEBUG = False
@@ -115,6 +114,7 @@ class ReqDirective(SphinxDirective):
     final_argument_whitespace = True
     option_spec = {
         'reqid': directives.unchanged,
+        'label': directives.unchanged,  # a text used in replacement of reqid when defining links
         'csv-file': directives.path,
         'filter': directives.unchanged,
         'sort': directives.unchanged,
@@ -501,11 +501,21 @@ class ReqDomain(Domain):
         # reqid MUST be unique
         match = [req2
             for name2, req2, typ2, docname2, anchor2, prio2 in self.data['reqs']
-            if req['reqid']==req2['reqid']
+            if req['reqid']==req2['reqid'] or req['reqid']==req2.attributes.get('label', 'LABEL_UNDEF2')
         ]
         if match:
-            msg = "Requirement ID must be unique. "+req['reqid']+" was defined multiple times"
+            msg = "Requirement ID must be unique. "+req['reqid']+" was defined multiple times, either as a reqid or as a label"
             raise SphinxError(msg)
+
+        # if defined, label MUST be unique
+        if 'label' in req.attributes:
+            match = [req2
+                for name2, req2, typ2, docname2, anchor2, prio2 in self.data['reqs']
+                if req['label']==req2['reqid'] or req['label']==req2.attributes.get('label', 'LABEL_UNDEF2')
+            ]
+            if match:
+                msg = "Requirement label must be unique. "+req['label']+" was defined multiple times, either as a reqid or as a label"
+                raise SphinxError(msg)
 
         name = 'req-'+req['reqid']
         anchor = 'req-'+req['reqid']
@@ -550,6 +560,13 @@ def env_updated(app, env):
 
     dom = env.get_domain('req')
 
+    # Get a list of defined labels
+    # label -> reqid
+    labels = { req['label']:req['reqid']
+        for name, req, typ, docname, anchor, prio in dom.data['reqs']
+        if req.attributes.get('label', None)
+    }
+
     # Execute reqlist queries and convert to req attribute
     for docname in env.all_docs.keys():
         # inspired by Environment.get_and_resolve_doctree
@@ -576,6 +593,9 @@ def env_updated(app, env):
         for node in doctree.traverse(req_node):
             for l in link_name:
                 for x in node.get(l, []):
+                    # if a label, we need to translate
+                    if x in labels:
+                        x = labels[x]
                     links.setdefault(x, dict()).setdefault(link_name[l], set()).add( node['reqid'] )
                 links.setdefault(node['reqid'], dict()).setdefault(l, set()).update( node.get(l, () ) )
     # apply
@@ -617,6 +637,33 @@ def env_updated(app, env):
                 if p.children:
                     p.pop()
             node.replace_self(p)
+
+    # Do not use label in ReqReference, replace with reqid
+    for docname in env.all_docs.keys():
+        doctree = env._write_doc_doctree_cache[docname]
+        for node in doctree.traverse(ReqReference):
+            # get the target req from the domain data
+            match = [
+                (docname, anchor, req)
+                for name, req, typ, docname, anchor, prio in dom.data['reqs']
+                if req.attributes.get('label', 'LABEL_UNDEF') == node['reftarget']
+            ]
+            if len(match) > 0:
+                node['reftarget'] = match[0][2]['reqid']
+                if node.children:
+                    node.children[0].children[0] = nodes.Text(match[0][2]['reqid'])
+
+    # Do not use label in ReqRefReference
+    for docname in env.all_docs.keys():
+        doctree = env._write_doc_doctree_cache[docname]
+        for node in doctree.traverse(ReqRefReference):
+            match = [
+                (docname, anchor, req)
+                for name, req, typ, docname, anchor, prio in dom.data['reqs']
+                if req.attributes.get('label', 'LABEL_UNDEF') == node['reftarget']
+            ]
+            if len(match) > 0:
+                node['reftarget'] = match[0][2]['reqid']
 
     # Add a target node for all ReqReference
     for docname in env.all_docs.keys():

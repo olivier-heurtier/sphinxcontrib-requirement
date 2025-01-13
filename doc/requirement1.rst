@@ -119,6 +119,12 @@ Generating ID
 -------------
 
 .. req:req:: Generation 1
+    :label: GEN1
+    :children: GEN2
 
     This is a first test of ID generation
+
+This requirement is referenced there: :req:ref:`GEN1`
+
+See also :req:req:`GEN2`
  
