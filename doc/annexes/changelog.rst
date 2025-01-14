@@ -2,8 +2,9 @@
 Change Log
 ==========
 
-**Version 1.3.0**
+**Version 1.3.0** (14/01/2025)
 
+- Add Jinja blocks in :file:`req.rst.jinja2` to allow reuse
 - Option to customize the text used in the :rst:role:`req:req` role.
   Defaut is to use the ``reqid``.
 - Fix bad line height in table introduced by \sphinxAtStartPar on empty link value
