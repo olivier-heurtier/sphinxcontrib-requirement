@@ -1,18 +1,14 @@
+{% extends "req/req.rst.jinja2" %}
 
-.. container:: req
-
-    :title:`{{text_title}}` :reqid:`{{reqid}}`
-
-    .. container:: content
-
-        {{content|indent(8)}}
-
+{% block comment %}
     .. container:: comment
 
         *Comment:*
 
         {{comment|default('')|indent(8)}}
+{% endblock %}
 
+{% block other %}
     Priority: *{{priority|default('-')}}*
 
     .. list-table:: Links for {{reqid}}
@@ -26,3 +22,4 @@
           - Leaves: {{_leaves}}
 
     This requirement is referenced there: :req:ref:`{{reqid}}`
+{% endblock %}

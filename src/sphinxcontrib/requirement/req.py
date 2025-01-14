@@ -25,6 +25,8 @@ import csv
 import pickle
 import textwrap
 
+import jinja2
+
 from docutils import nodes
 from docutils.parsers.rst import directives
 from docutils.utils import DependencyList
@@ -35,6 +37,7 @@ from sphinx.domains import Domain
 from sphinx.roles import XRefRole
 from sphinx.util.docutils import SphinxDirective, SphinxRole
 from sphinx.util.template import SphinxRenderer, ReSTRenderer, LaTeXRenderer
+from sphinx.jinja2glue import SphinxFileSystemLoader
 from sphinx.util.docutils import sphinx_domains
 from sphinx.util import rst
 from sphinx.errors import SphinxError
@@ -47,7 +50,6 @@ from sphinx.writers import text
 from sphinx.builders.text import TextBuilder
 
 # XXX HTML: links local to the page behave differently
-# XXX define Jinja macros in jinja2 files.
 
 _DEBUG = False
 
@@ -177,7 +179,12 @@ class ReqDirective(SphinxDirective):
 
             if not 'hidden' in options:
                 r = ReSTRenderer( [self.env.srcdir,os.path.dirname(__file__)] )
-                s = r.render('req.rst.jinja2', options)
+                loader = jinja2.PrefixLoader({
+                    '': r.env.loader,
+                    'req': SphinxFileSystemLoader([os.path.dirname(__file__)])
+                })
+                r.env.loader = loader
+                s = r.render('/req.rst.jinja2', options)
 
                 sub_nodes = self.parse_text_to_nodes(s)
                 node += sub_nodes

@@ -1,9 +1,17 @@
 .. container:: req
 
+{% block title %}
     :title:`{{text_title}}` :reqid:`{{reqid}}`
+{% endblock %}
 
+{% block content %}
     .. container:: content
 
         {{content|indent(8)}}
 
+{% block comment %}
         {{comment|default('')|indent(8)}}
+{% endblock %}
+{% block other %}
+{% endblock %}
+{% endblock %}
