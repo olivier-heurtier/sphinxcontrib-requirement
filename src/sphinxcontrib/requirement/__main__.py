@@ -9,15 +9,15 @@ import logging
 import argparse
 import re
 
-rReq = re.compile(r'(?P<req>.. req:req:: .*)\n(?P<options>(    :(?P<optionkey>\w+):(?P<optionvalue>.*)\n)+)', re.UNICODE)
+rReq = re.compile(r'(?P<req>.. req:req::.*)\n(?P<options>(    :(?P<optionkey>\w+):(?P<optionvalue>.*)\n)+)', re.UNICODE)
 rOption = re.compile(r'    :(?P<optionkey>\w+):(?P<optionvalue>.*)\n', re.UNICODE)
 
 # _____________________________________________________________________________
 def process(args):
     serial = args.start_serial
     buf = args.input.read()
-    for mo_req in rReq.finditer(buf):
-        logging.debug(mo_req['req'])
+    def fReq(mo_req, ctx=locals()):
+        serial = ctx['serial']
         for mo_opt in rOption.finditer(mo_req['options']):
             logging.debug(mo_opt['optionkey'] + '/' + mo_opt['optionvalue'])
             if mo_opt['optionkey'] == 'reqid' or mo_opt['optionkey'] == 'csv-file':
@@ -25,12 +25,17 @@ def process(args):
         else:
             logging.info('Found one requirement with no ID: [{}]'.format(mo_req['req'][12:].strip()))
             nreqid = args.req_idpattern.format(**dict(doc=args.doc, serial=serial))
-            serial += 1
-            # XXX use re
-            buf = buf.replace(mo_req['req'], mo_req['req']+'\n    :reqid: '+nreqid)
+            ctx['serial'] = serial + 1
+            return mo_req['req']+'\n    :reqid: '+nreqid+'\n'+mo_req['options']
+        return mo_req['req']+'\n'+mo_req['options']
+    buf = rReq.sub(fReq, buf)
 
     if args.output == '-':
         sys.stdout.write(buf)
+    elif args.output == '=':
+        args.input.close()
+        with open(args.input.name, 'w', encoding='utf-8') as f:
+            f.write(buf)
     else:
         with open(args.output, 'w', encoding='utf-8') as f:
             f.write(buf)
