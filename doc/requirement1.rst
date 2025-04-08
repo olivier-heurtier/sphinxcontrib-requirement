@@ -126,5 +126,11 @@ Generating ID
 
 This requirement is referenced there: :req:ref:`GEN1`
 
+.. req:req::
+    :label: GEN1
+    :children: GEN2
+
+    An additional test for ID generation with no title
+
 See also :req:req:`GEN2`
  

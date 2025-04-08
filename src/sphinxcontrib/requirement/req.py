@@ -844,7 +844,7 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     app.add_config_value('req_options', {}, 'env', [dict]) # Additional options/fields that can be defined on requirements
     app.add_config_value('req_links', {}, 'env', [dict]) # Additional links between requirements
     app.add_config_value('req_idpattern', 'REQ-{doc}{serial:03d}', 'env', [str]) # Additional options/fields that can be defined on requirements
-    app.add_config_value('req_reference_pattern', '{reqid}', 'env', [str]) # patter of text inserted when a reference is
+    app.add_config_value('req_reference_pattern', '{reqid}', 'env', [str]) # pattern of text inserted when a reference is
 
     app.connect('config-inited', config_inited)
     app.connect('doctree-read', doctree_read)
