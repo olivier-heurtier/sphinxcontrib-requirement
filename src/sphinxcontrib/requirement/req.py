@@ -144,6 +144,7 @@ class ReqDirective(SphinxDirective):
                 docnames = list(self.env.app.project.docnames)
                 docnames.sort()
                 doc_idx = docnames.index(self.env.docname)
+                # XXX get a serial unique in the whole document
                 reqid = self.env.config.req_idpattern.format(**dict(doc=doc_idx, serial=self.env.new_serialno('req')+1))
             options['reqid'] = reqid
             # create pseudo properties for links, they will be converted later on
