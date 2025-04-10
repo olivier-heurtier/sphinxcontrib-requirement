@@ -42,13 +42,13 @@ Req ``REQ-0002`` is referenced there: :req:ref:`REQ-0002`
 Generating ID
 -------------
 
-.. req:req:: Generation 2
-    :label: GEN2
+.. req:req:: Generation 3
+    :label: GEN3
     :children: GEN1
 
-    This is a second test of ID generation
+    This is a third test of ID generation
 
-This requirement is referenced there: :req:ref:`GEN2`
+This requirement is referenced there: :req:ref:`GEN3`
 
 See also :req:req:`GEN1`
  

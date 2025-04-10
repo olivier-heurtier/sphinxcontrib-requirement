@@ -144,8 +144,8 @@ class ReqDirective(SphinxDirective):
                 docnames = list(self.env.app.project.docnames)
                 docnames.sort()
                 doc_idx = docnames.index(self.env.docname)
-                # XXX get a serial unique in the whole document
-                reqid = self.env.config.req_idpattern.format(**dict(doc=doc_idx, serial=self.env.new_serialno('req')+1))
+                # Propose a serial unique in the whole set of documents
+                reqid = self.env.config.req_idpattern.format(**dict(doc=doc_idx, doc_serial=self.env.new_serialno('req')+1, serial=self.env.get_domain('req').new_serial()))
             options['reqid'] = reqid
             # create pseudo properties for links, they will be converted later on
             for l, rl in self.env.config.req_links.items():
@@ -477,9 +477,15 @@ class ReqDomain(Domain):
     initial_data = {
         'reqs': [],  # object list
         'N': 1,
+        'serial': 1,
         'reqrefs' : [],
     }
     data_version = 0
+
+    def new_serial(self):
+        current = self.data['serial']
+        self.data['serial'] = current + 1
+        return current
 
     def get_full_qualified_name(self, node):
         if type(node) is ReqReference:
@@ -783,8 +789,6 @@ def doctree_resolved(app, doctree, fromdocname):
             p += n
 
         node.replace_self(p)
-        # del node[0]
-        # node += [p]
     for node in doctree.traverse(ReqRefReference):
         print('**** ERROR')
 
@@ -844,7 +848,7 @@ def setup(app: Sphinx) -> ExtensionMetadata:
     app.add_config_value('req_reference_text', u'\u2750', 'env', [str]) # Character or string used for cross references
     app.add_config_value('req_options', {}, 'env', [dict]) # Additional options/fields that can be defined on requirements
     app.add_config_value('req_links', {}, 'env', [dict]) # Additional links between requirements
-    app.add_config_value('req_idpattern', 'REQ-{doc}{serial:03d}', 'env', [str]) # Additional options/fields that can be defined on requirements
+    app.add_config_value('req_idpattern', 'REQ-{doc:02}{doc_serial:03d}', 'env', [str]) # Additional options/fields that can be defined on requirements
     app.add_config_value('req_reference_pattern', '{reqid}', 'env', [str]) # pattern of text inserted when a reference is
 
     app.connect('config-inited', config_inited)

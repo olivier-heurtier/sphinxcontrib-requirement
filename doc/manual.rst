@@ -136,7 +136,8 @@ req_reference_pattern
 req_idpattern
 
     A *format* string used when generating a new identifier. This must be an f-string referencing
-    the key ``doc`` and ``serial``. Default: ``REQ-{doc}{serial:03d}``
+    the key ``doc``, ``doc_serial`` (in the context of the current ReST doument) and ``serial``
+    (in the context of the whole set of ReST documents). Default: ``REQ-{doc:02}{doc_serial:03d}``
 
 req_html_css
 
@@ -203,6 +204,7 @@ To better customize the rendering, you can also place in the root directory of t
 
 .. list-table:: Customization Files
     :header-rows: 1
+    :widths: 25 75
 
     * - File
       - Description

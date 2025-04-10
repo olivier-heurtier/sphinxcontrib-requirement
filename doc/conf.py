@@ -67,5 +67,5 @@ req_links = {
     "branches":"leaves",
 }
 
-req_idpattern = 'GEN-{doc}{serial:03d}'
+req_idpattern = 'GEN-{serial:02d}-{doc}{doc_serial:03d}'
 req_reference_pattern = '{reqid}-{text_title}'

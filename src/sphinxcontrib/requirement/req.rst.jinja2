@@ -1,8 +1,10 @@
 .. container:: req
 
-{% block title %}
+{% block title %}{% if text_title %}
     :title:`{{text_title}}` :reqid:`{{reqid}}`
-{% endblock %}
+{% else %}
+    :reqid:`{{reqid}}`
+{% endif %}{% endblock %}
 
 {% block content %}
     .. container:: content

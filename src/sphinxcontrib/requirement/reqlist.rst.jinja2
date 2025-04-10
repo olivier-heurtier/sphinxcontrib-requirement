@@ -14,7 +14,7 @@
 {%for req in reqs%}
     *
 {%for f in fields%}
-      - {{req[f]}}
+      - {{req[f]|default('')|string|indent(8)}}
 {%endfor%}
 
 {%endfor%}
