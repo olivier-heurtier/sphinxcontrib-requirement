@@ -24,6 +24,7 @@ import os
 import csv
 import pickle
 import textwrap
+import re
 
 import jinja2
 
@@ -50,7 +51,7 @@ from sphinx.writers import text
 from sphinx.builders.text import TextBuilder
 
 # XXX HTML: links local to the page behave differently
-# XXX support regexp pattern to filter in reqlist or CSV import + selection of the field used for filtering (ID, title, content)
+# XXX :req:req:`reqid` fails in reqlist content
 
 _DEBUG = False
 
@@ -63,6 +64,10 @@ def link(argument):
     if _DEBUG:
         print('Transforming(link) <%s> -> <%s>' % (argument, ret))
     return ret
+
+#______________________________________________________________________________
+class ReqException(Exception):
+    pass
 
 #______________________________________________________________________________
 class req_links_node(nodes.Element):
@@ -83,7 +88,7 @@ class req_node(nodes.Element):
     pass
 
 def html_visit_req_node(self: HTML5Translator, node: req_node) -> None:
-    if not 'hidden' in node.attributes:
+    if 'hidden' not in node.attributes:
         r = SphinxRenderer( [self.builder.app.env.srcdir, os.path.dirname(__file__)] )
         s = r.render('req.html.jinja2', node.attributes)
         v,d = s.split('---CONTENT---')
@@ -91,7 +96,7 @@ def html_visit_req_node(self: HTML5Translator, node: req_node) -> None:
         self._req = d
 
 def latex_visit_req_node(self: LaTeXTranslator, node: req_node) -> None:
-    if not 'hidden' in node.attributes:
+    if 'hidden' not in node.attributes:
         r = LaTeXRenderer( [self.builder.app.env.srcdir, os.path.dirname(__file__)] )
         s = r.render('req.latex.jinja2', node.attributes)
         v,d = s.split('---CONTENT---')
@@ -100,7 +105,7 @@ def latex_visit_req_node(self: LaTeXTranslator, node: req_node) -> None:
 
 
 def depart_req_node(self: LaTeXTranslator, node: req_node) -> None:
-    if not 'hidden' in node.attributes:
+    if 'hidden' not in node.attributes:
         self.body.append(self._req)
         self._req = None
 
@@ -179,7 +184,7 @@ class ReqDirective(SphinxDirective):
             options['text_content'] = node['text_content'] = _get_text(node['content'])
             options['text_title'] = node['text_title'] = _get_text(node['title'])
 
-            if not 'hidden' in options:
+            if 'hidden' not in options:
                 r = ReSTRenderer( [self.env.srcdir,os.path.dirname(__file__)] )
                 loader = jinja2.PrefixLoader({
                     '': r.env.loader,
@@ -200,11 +205,11 @@ class ReqDirective(SphinxDirective):
             relpath, abspath = self.env.relfn2path(self.options.get('csv-file'))
             self.env.note_dependency(relpath)
 
-            filter = None
+            req_filter = None
             sort = None
             del self.options['csv-file']
             if 'filter' in self.options:
-                filter = self.options['filter']
+                req_filter = self.options['filter']
                 del self.options['filter']
             if 'sort' in self.options:
                 sort = self.options['sort']
@@ -216,7 +221,7 @@ class ReqDirective(SphinxDirective):
                 spamreader = csv.reader(csvfile, delimiter=',')
                 fieldnames = next(spamreader)
                 if 'reqid' not in fieldnames and 'title' not in fieldnames and 'content' not in fieldnames:
-                    raise Exception("Missing header row in %s" % abspath)
+                    raise ReqException("Missing header row in %s" % abspath)
                 
                 for row in spamreader:
                     options = {}
@@ -229,7 +234,7 @@ class ReqDirective(SphinxDirective):
                             options[v] = row[i]
                     allreqs.append(options)
             # apply filter and sorting
-            allreqs = _filter_and_sort(allreqs, filter, sort)
+            allreqs = _filter_and_sort(allreqs, req_filter, sort)
 
             # create the nodes for the remaining requirements
             allnodes = []
@@ -270,6 +275,7 @@ def _filter_and_sort(reqs :list[req_node], filter :str=None, sort :str=None) -> 
             # Since custo attributes may not be defined on all requirements
             # we are trying to set a default value (None) in case of error
             d = dict()
+            d.update(globals())
             while True:
                 try:
                     x = eval(filter, d, r)
@@ -297,9 +303,9 @@ def _filter_and_sort(reqs :list[req_node], filter :str=None, sort :str=None) -> 
         fs_list = [x.strip() for x in sort.split(',')]
         for x in fs_list:
             if x and x[0]=='-':
-                reqs.sort(key=lambda r: r.get(x[1:], ''), reverse=True)
+                reqs.sort(key=lambda r, key=x: r.get(key[1:], ''), reverse=True)
             else:
-                reqs.sort(key=lambda r: r.get(x, ''), reverse=False)
+                reqs.sort(key=lambda r, key=x: r.get(key, ''), reverse=False)
     return reqs
 
 class reqlist_node(nodes.Element):
@@ -321,7 +327,7 @@ class reqlist_node(nodes.Element):
         reqs = self.get_list(dom)
 
         # evaluate the content
-        if not 'hidden' in self.attributes:
+        if 'hidden' not in self.attributes:
             r = ReSTRenderer( [app.srcdir, os.path.dirname(__file__)] )
             kwargs = dict(
                 reqs=reqs,
@@ -445,9 +451,7 @@ class ReqListDirective(SphinxDirective):
 def get_refuri(builder, fromdocname, todocname, target):
     if target:
         return builder.get_relative_uri(fromdocname, todocname) + '#' + target
-    else:
-        return builder.get_relative_uri(fromdocname, todocname)
-    return target
+    return builder.get_relative_uri(fromdocname, todocname)
 
 #______________________________________________________________________________
 class ReqReference(nodes.reference):
@@ -560,7 +564,6 @@ class ReqDomain(Domain):
 def doctree_read(app, doctree):
     if _DEBUG:
         print('----------------doctree_read-------------------------')
-    # dom = app.env.get_domain('req')
     app.env.note_dependency(os.path.join(app.env.srcdir, 'req.html.jinja2'))
     app.env.note_dependency(os.path.join(app.env.srcdir, 'req.latex.jinja2'))
 

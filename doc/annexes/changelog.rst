@@ -7,6 +7,7 @@ Change Log
 - Add a new ``serial`` variable, with a number unique in the whole set of ReST documents, that
   can be used in ``req_idpattern``. Previous serial variable is renamed to ``doc_serial``.
 - Fix rendering of empty list of requirements
+- Regexp can be used in filters
 
 **Version 1.3.0** (14/01/2025)
 

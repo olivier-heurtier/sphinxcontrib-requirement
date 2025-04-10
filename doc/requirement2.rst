@@ -234,4 +234,15 @@ renders as:
 .. warning::
 
     Do not forget to *indent* as needed values that can span multiple lines.
-    
+
+Filters can use some Python functions. For example ``re`` module is available.
+
+.. code-block:: rst
+
+    .. req:reqlist:: Using advanced filtering with regexp
+        :filter: re.search(r'\svery very\s', content) and priority==1
+
+renders as:
+
+.. req:reqlist:: Using advanced filtering with regexp
+    :filter: re.search(r'\svery very\s', content) and priority==1
