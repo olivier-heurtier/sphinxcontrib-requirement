@@ -74,11 +74,30 @@ This is a normal table:
       - a
       - b
 
-This is the list of all requirements defined in this document:
+This is the list of all requirements defined in this document.
+
+.. code-block:: rst
+
+    .. req:reqlist:: This is the list of all requirements (no filtering, no sorting)
+
+renders as:
 
 .. req:reqlist:: This is the list of all requirements (no filtering, no sorting)
 
 This is still the list of all the requirements but with a customized list of columns.
+
+.. code-block:: rst
+
+    .. req:reqlist:: This is a *list* produced using **all** options (no filtering, no sorting)
+        :fields: reqid, title, priority, _parents
+        :headers: ID, Title, Priority, Parents
+        :widths: 20 40 20 30
+        :width: 80%
+        :align: right
+        :header-rows: 0
+        :stub-columns: 2
+
+renders as:
 
 .. req:reqlist:: This is a *list* produced using **all** options (no filtering, no sorting)
     :fields: reqid, title, priority, _parents
@@ -89,7 +108,16 @@ This is still the list of all the requirements but with a customized list of col
     :header-rows: 0
     :stub-columns: 2
 
-The same directive can be used to produce a plain list, with no table:
+The same directive can be used to produce a plain list, with no table.
+
+.. code-block:: rst
+
+    .. req:reqlist::
+        :filter: title.find('Generation')>=0
+
+        {{reqs|join(', ', attribute='reqid')}}
+
+renders as:
 
 .. req:reqlist::
     :filter: title.find('Generation')>=0
@@ -99,6 +127,15 @@ The same directive can be used to produce a plain list, with no table:
 Another example illustrating usage of an attribute not defined on all requirements and
 listing all priority 1 requirements:
 
+.. code-block:: rst
+
+    .. req:reqlist::
+        :filter: priority==1
+
+        {{reqs|join(', ', attribute='reqid')}}
+
+renders as:
+
 .. req:reqlist::
     :filter: priority==1
 
@@ -106,20 +143,71 @@ listing all priority 1 requirements:
 
 .. only:: html
 
-    The same list can be hidden and exported to a `CSV file <prio1.csv>`_
+    The same list can be hidden and exported to a `CSV file <prio1.csv>`_ with:
+
+    .. code-block:: rst
+
+        .. req:reqlist::
+            :filter: priority==1
+            :hidden:
+            :csv-file: prio1.csv
 
 .. raw:: latex
 
     The same list can be hidden and exported to a
-    \textattachfile[]{prio1.csv}{CSV file}
+    \textattachfile[]{prio1.csv}{CSV file} with:
+
+    .. code-block:: rst
+
+        .. req:reqlist::
+            :filter: priority==1
+            :hidden:
+            :csv-file: prio1.csv
 
 .. req:reqlist::
     :filter: priority==1
     :hidden:
     :csv-file: prio1.csv
 
+If the list is empty, a defaut message is displayed.
+
+.. code-block:: rst
+
+    .. req:reqlist::
+        :filter: priority==5
+
+renders as:
+
+    .. req:reqlist::
+        :filter: priority==5
 
 This directive accepts a content to better customize the rendering.
+
+.. code-block:: rst
+
+    .. req:reqlist:: A custom output with the full content, sorted by reverse ID
+        :sort: -reqid
+
+
+        .. list-table:: {{caption}}
+            :widths: 20 50 20 20
+
+            * - ID
+              - Description
+              - Contract
+              - Ref
+
+        {%for req in reqs%}
+            * - {{req['reqid']}}
+              - {{req['title']}}
+
+                {{req['content']|indent(8)}}
+
+              - {{req['contract']|upper}}
+              - :req:ref:`{{req['reqid']}}`
+        {%endfor%}
+
+renders as:
 
 .. req:reqlist:: A custom output with the full content, sorted by reverse ID
     :sort: -reqid

@@ -1,4 +1,4 @@
-
+{% if reqs %}
 .. list-table:: {{caption}}
     :align: {{align}}
     :width: {{width}}
@@ -17,4 +17,4 @@
       - {{req[f]|default('')|string|indent(8)}}
 {%endfor%}
 
-{%endfor%}
+{%endfor%}{%else%}*--- There are no requirements matching the criteria ---*{%endif%}

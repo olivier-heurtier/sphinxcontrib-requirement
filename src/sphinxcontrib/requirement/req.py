@@ -50,9 +50,7 @@ from sphinx.writers import text
 from sphinx.builders.text import TextBuilder
 
 # XXX HTML: links local to the page behave differently
-# XXX title should optional (a default value must be provided, default layout must consider it can be missing)
 # XXX support regexp pattern to filter in reqlist or CSV import + selection of the field used for filtering (ID, title, content)
-# XXX reqlist with no items fails to compile (list is missing one line)
 
 _DEBUG = False
 
