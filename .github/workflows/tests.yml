@@ -10,14 +10,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.13
         uses: actions/setup-python@v4
         with:
-          python-version: 3.11
+          python-version: 3.13
 
       - name: Run pre-commit
         run: |
           python -m pip install tox
-          python -m tox -e py,html-sphinx74,html-sphinx81,html-sphinxL
+          python -m tox -e py,html-sphinx7,html-sphinx8,html-sphinx9,html-sphinxL
 
 
