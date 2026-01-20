@@ -2,7 +2,7 @@
 Change Log
 ==========
 
-**Version 1.4.0**
+**Version 1.4.0** (20/01/2026)
 
 - Support XeLaTeX
 - Support Sphinx 9.1
