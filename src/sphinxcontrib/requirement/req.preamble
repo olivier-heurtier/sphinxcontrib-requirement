@@ -5,8 +5,10 @@
 % https://ctan.tetaneutral.net/macros/latex/contrib/marginnote/marginnote.pdf
 \usepackage{marginnote}
 
+\ifdefined\DeclareUnicodeCharacter
 \DeclareUnicodeCharacter{2750}{\SquareShadowTopRight}
 \DeclareUnicodeCharacter{202F}{~}
+\fi
 
 % env for the whole requirement block and for the content (the 2 container directives used in req.rst.jinja2)
 % https://tex.stackexchange.com/questions/666826/why-is-my-environment-not-taking-the-style-i-specify
