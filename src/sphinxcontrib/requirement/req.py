@@ -34,12 +34,16 @@ from docutils.utils import DependencyList
 from docutils.io import StringOutput
 from docutils.transforms.references import Substitutions
 
+import sphinx
 from sphinx.domains import Domain
 from sphinx.roles import XRefRole
 from sphinx.util.docutils import SphinxDirective, SphinxRole
 from sphinx.util.template import SphinxRenderer, ReSTRenderer, LaTeXRenderer
 from sphinx.jinja2glue import SphinxFileSystemLoader
 from sphinx.util.docutils import sphinx_domains
+if sphinx.version_info>=(9,0,0):
+    from sphinx.util.docutils import _parse_str_to_doctree
+    from sphinx.environment import _CurrentDocument
 from sphinx.util import rst
 from sphinx.errors import SphinxError
 
@@ -345,15 +349,7 @@ class reqlist_node(nodes.Element):
             else:
                 s = r.render('reqlist.rst.jinja2', kwargs)
 
-            # parse the resulting string (from sphinx.builders.Builder.read_doc)
-            # with the directives and roles active
-            app.builder.env.prepare_settings('reqlist.rst')
-            publisher = app.registry.get_publisher(app, 'restructuredtext')
-            publisher.settings.record_dependencies = DependencyList()
-            with sphinx_domains(app.env), rst.default_role('reqlist.rst', app.config.default_role):
-                publisher.set_source(source=io.StringIO(s), source_path='reqlist.rst')
-                publisher.publish()
-                document = publisher.document
+            document = self.read_doc(app, s)
 
             # fix docname in all nodes of the document
             # fix also the corresponding data in env
@@ -368,6 +364,58 @@ class reqlist_node(nodes.Element):
 
             self += document.children
 
+    def read_doc(self, app, s):
+        # parse the resulting string (from sphinx.builders.Builder.read_doc)
+        # with the directives and roles active
+
+        if sphinx.version_info<(8,0,0):
+            app.env.prepare_settings('reqlist.rst')
+            publisher = app.registry.get_publisher(app, 'restructuredtext')
+            publisher.settings.record_dependencies = DependencyList()
+            with sphinx_domains(app.env), rst.default_role('reqlist.rst', app.config.default_role):
+                publisher.set_source(source=io.StringIO(s), source_path='reqlist.rst')
+                publisher.publish()
+                document = publisher.document
+        elif sphinx.version_info<(9,0,0):
+            # Sphinx 8
+            sn = app.env.current_document._serial_numbers
+            app.env.prepare_settings('reqlist.rst')
+            publisher = app.registry.get_publisher(app, 'restructuredtext')
+            publisher.settings.record_dependencies = DependencyList()
+            with sphinx_domains(app.env), rst.default_role('reqlist.rst', app.config.default_role):
+                publisher.set_source(source=io.StringIO(s), source_path='reqlist.rst')
+                publisher.publish()
+                document = publisher.document
+            app.env.current_document._serial_numbers = sn
+        else:
+            env  = app.env
+            sn = env.current_document._serial_numbers
+            env.prepare_settings('reqlist.rst')
+
+            filetype = 'restructuredtext'
+            parser = app.registry.create_source_parser(
+                filetype, config=app.builder.config, env=env
+            )
+            doctree = _parse_str_to_doctree(
+                s,
+                filename='reqlist.rst',
+                default_role=app.config.default_role,
+                default_settings=env.settings,
+                env=env,
+                events=app.builder.events,
+                parser=parser,
+                transforms=app.builder._registry.get_transforms(),
+            )
+            doctree.reporter = None  # type: ignore[assignment]
+            doctree.transformer = None  # type: ignore[assignment]
+            document = doctree
+
+            # cleanup
+            env.current_document = _CurrentDocument()
+            env.ref_context.clear()
+            env.current_document._serial_numbers = sn
+
+        return document        
 
 def visit_reqlist_node(self, node: reqlist_node) -> None:
     if 'csv-file' in node.attributes:

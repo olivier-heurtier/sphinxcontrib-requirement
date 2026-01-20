@@ -4,6 +4,8 @@ Change Log
 
 **Version 1.4.0**
 
+- Support XeLaTeX
+- Support Sphinx 9.1
 - Add a new ``serial`` variable, with a number unique in the whole set of ReST documents, that
   can be used in ``req_idpattern``. Previous serial variable is renamed to ``doc_serial``.
 - Fix rendering of empty list of requirements

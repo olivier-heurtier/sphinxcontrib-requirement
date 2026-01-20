@@ -157,6 +157,8 @@ renders as:
     The same list can be hidden and exported to a
     \textattachfile[]{prio1.csv}{CSV file} with:
 
+.. only:: latex
+
     .. code-block:: rst
 
         .. req:reqlist::
@@ -191,6 +193,7 @@ This directive accepts a content to better customize the rendering.
 
         .. list-table:: {{caption}}
             :widths: 20 50 20 20
+            :class: longtable
 
             * - ID
               - Description
@@ -215,6 +218,7 @@ renders as:
 
     .. list-table:: {{caption}}
         :widths: 20 50 20 20
+        :class: longtable
 
         * - ID
           - Description

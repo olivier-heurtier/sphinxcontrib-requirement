@@ -36,7 +36,7 @@ rst_prolog = """
 latex_elements = {
 'extraclassoptions': 'openany,oneside',
 'preamble':r'''
-\usepackage{attachfile}
+\usepackage{attachfile2}
 \usepackage[framemethod=TikZ]{mdframed}
 
 % custo styling of the comment
